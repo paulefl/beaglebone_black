@@ -37,15 +37,8 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: '1.23'
-      - name: Vet
-        run: |
-          cd go-api && go vet ./...
-          cd ../tools/cli && go vet ./...
-          cd ../tui && go vet ./...
-      - name: Format Check
-        run: |
-          test -z "$(gofmt -l go-api/ tools/)" || \
-            (echo "❌ Formatierung prüfen: gofmt -w ." && exit 1)
+      - name: Lint
+        run: make lint
 
   # ── Web GUI Validierung ───────────────────────
   test-web:

@@ -30,6 +30,11 @@ test-ci:
 test-cover:
 	./scripts/test.sh -cover -html
 
+lint:
+	cd go-api && go vet ./pkg/hal/ ./pkg/hal/mock/ ./pkg/hal/config/
+	test -z "$$(gofmt -l go-api/ tools/)" || (echo "❌ Formatierung prüfen: gofmt -w ." && exit 1)
+	@echo "✅ Lint OK"
+
 deploy:
 	scp bin/embedded go-api/libs/libhardware.so go-api/libs/libhardware_rs.so \
 	  debian@192.168.7.2:/app/
@@ -40,4 +45,4 @@ clean:
 	cd rust-lib && cargo clean
 	rm -f bin/embedded bin/bbcli-*
 
-.PHONY: all c-lib rust-lib go-api cli test deploy clean
+.PHONY: all c-lib rust-lib go-api cli test test-ci test-cover lint deploy clean
