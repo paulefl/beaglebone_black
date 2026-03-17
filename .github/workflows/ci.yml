@@ -16,20 +16,11 @@ jobs:
 
       - uses: actions/setup-go@v6
         with:
-          go-version: '1.22'
+          go-version: '1.23'
           cache: true
 
       - name: Go Unit Tests
-        run: |
-          cd go-api
-          go test ./pkg/hal/... -v -count=1 -timeout 30s \
-            -coverprofile=coverage.out -covermode=atomic
-          go tool cover -func=coverage.out
-
-      - name: Race Condition Tests
-        run: |
-          cd go-api
-          go test ./pkg/hal/... -race -count=3 -timeout 60s
+        run: make test-ci
 
       - name: Upload Coverage
         uses: codecov/codecov-action@v5
@@ -45,16 +36,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v6
         with:
-          go-version: '1.22'
-      - name: Vet
-        run: |
-          cd go-api && go vet ./...
-          cd ../tools/cli && go vet ./...
-          cd ../tui && go vet ./...
-      - name: Format Check
-        run: |
-          test -z "$(gofmt -l go-api/ tools/)" || \
-            (echo "❌ Formatierung prüfen: gofmt -w ." && exit 1)
+          go-version: '1.23'
+      - name: Lint
+        run: make lint
 
   # ── Web GUI Validierung ───────────────────────
   test-web:
@@ -78,8 +62,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Bash Syntax
         run: |
-          bash -n scripts/install.sh
-          bash -n scripts/build_adoc.sh
+          find . -name "*.sh" | while read -r f; do
+            bash -n "$f" && echo "  ✅ $f" || { echo "  ❌ $f"; exit 1; }
+          done
           echo "✅ Script Syntax OK"
 
   # ── Python Tests (API Mock) ───────────────────
@@ -92,9 +77,9 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install
-        run: pip install pytest requests
+        run: pip install -r tests/requirements-dev.txt
       - name: Tests
-        run: pytest tests/api/ -v --timeout=10 || true
+        run: make test-python
 
   # ── CLI Build (Multi-Plattform) ───────────────
   build-cli:
@@ -114,6 +99,9 @@ jobs:
           - goos: darwin
             goarch: amd64
             name: bbcli-darwin-amd64
+          - goos: darwin
+            goarch: arm64
+            name: bbcli-darwin-arm64
           - goos: windows
             goarch: amd64
             name: bbcli-windows-amd64.exe
@@ -121,7 +109,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v6
         with:
-          go-version: '1.22'
+          go-version: '1.23'
       - name: Build ${{ matrix.name }}
         env:
           GOOS:        ${{ matrix.goos }}
@@ -130,6 +118,7 @@ jobs:
           CGO_ENABLED: "0"
         run: |
           cd tools/cli
+          go mod tidy
           go build -ldflags="-s -w \
             -X main.Version=${{ github.ref_name }}" \
             -o ../../bin/${{ matrix.name }} .
@@ -160,7 +149,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v6
         with:
-          go-version: '1.22'
+          go-version: '1.23'
       - name: Build ${{ matrix.name }}
         env:
           GOOS:        ${{ matrix.goos }}
@@ -169,6 +158,7 @@ jobs:
           CGO_ENABLED: "0"
         run: |
           cd tools/tui
+          go mod tidy
           go build -ldflags="-s -w" \
             -o ../../bin/${{ matrix.name }} .
       - uses: actions/upload-artifact@v7

@@ -19,7 +19,9 @@ var apiBase = "http://192.168.7.2:5000"
 // ── API Helper ───────────────────────────────────────────────────
 func apiGet(path string, out interface{}) error {
 	resp, err := http.Get(apiBase + path)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	defer resp.Body.Close()
 	return json.NewDecoder(resp.Body).Decode(out)
 }
@@ -27,9 +29,13 @@ func apiGet(path string, out interface{}) error {
 func apiPost(path string, in, out interface{}) error {
 	body, _ := json.Marshal(in)
 	resp, err := http.Post(apiBase+path, "application/json", bytes.NewReader(body))
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	defer resp.Body.Close()
-	if out != nil { return json.NewDecoder(resp.Body).Decode(out) }
+	if out != nil {
+		return json.NewDecoder(resp.Body).Decode(out)
+	}
 	return nil
 }
 
@@ -41,12 +47,12 @@ func main() {
 	w.Resize(fyne.NewSize(900, 700))
 
 	tabs := container.NewAppTabs(
-		container.NewTabItem("🌡 BME280",  bme280Tab()),
-		container.NewTabItem("⚡ GPIO",    gpioTab()),
-		container.NewTabItem("📡 UART",    uartTab()),
-		container.NewTabItem("🔌 SPI",     spiTab()),
+		container.NewTabItem("🌡 BME280", bme280Tab()),
+		container.NewTabItem("⚡ GPIO", gpioTab()),
+		container.NewTabItem("📡 UART", uartTab()),
+		container.NewTabItem("🔌 SPI", spiTab()),
 		container.NewTabItem("🔧 Backend", backendTab()),
-		container.NewTabItem("🖥 System",  systemTab()),
+		container.NewTabItem("🖥 System", systemTab()),
 	)
 	tabs.SetTabLocation(container.TabLocationLeading)
 	w.SetContent(tabs)
@@ -55,12 +61,12 @@ func main() {
 
 // ── BME280 Tab ───────────────────────────────────────────────────
 func bme280Tab() *fyne.Container {
-	tempLabel  := widget.NewLabel("-- °C")
-	humLabel   := widget.NewLabel("-- %")
+	tempLabel := widget.NewLabel("-- °C")
+	humLabel := widget.NewLabel("-- %")
 	pressLabel := widget.NewLabel("-- hPa")
-	altLabel   := widget.NewLabel("-- m")
-	backLabel  := widget.NewLabel("--")
-	status     := widget.NewLabel("")
+	altLabel := widget.NewLabel("-- m")
+	backLabel := widget.NewLabel("--")
+	status := widget.NewLabel("")
 
 	for _, l := range []*widget.Label{tempLabel, humLabel, pressLabel, altLabel} {
 		l.TextStyle = fyne.TextStyle{Bold: true}
@@ -75,19 +81,20 @@ func bme280Tab() *fyne.Container {
 	readFn := func() {
 		var d map[string]interface{}
 		if err := apiGet("/api/v1/bme280", &d); err != nil {
-			status.SetText("❌ " + err.Error()); return
+			status.SetText("❌ " + err.Error())
+			return
 		}
-		tempLabel.SetText(fmt.Sprintf("%.2f °C",  d["temperature"]))
-		humLabel.SetText(fmt.Sprintf("%.2f %%",   d["humidity"]))
+		tempLabel.SetText(fmt.Sprintf("%.2f °C", d["temperature"]))
+		humLabel.SetText(fmt.Sprintf("%.2f %%", d["humidity"]))
 		pressLabel.SetText(fmt.Sprintf("%.2f hPa", d["pressure"]))
-		altLabel.SetText(fmt.Sprintf("%.1f m",    d["altitude"]))
+		altLabel.SetText(fmt.Sprintf("%.1f m", d["altitude"]))
 		backLabel.SetText(d["backend"].(string))
 		status.SetText("✅ Aktualisiert")
 	}
 
-	readBtn := widget.NewButton("🔄 Lesen",    readFn)
+	readBtn := widget.NewButton("🔄 Lesen", readFn)
 	saveBtn := widget.NewButton("💾 Speichern", func() {
-		osMap := map[string]int{"x1":1,"x2":2,"x4":4,"x8":8,"x16":16}
+		osMap := map[string]int{"x1": 1, "x2": 2, "x4": 4, "x8": 8, "x16": 16}
 		apiPost("/api/v1/bme280/config", map[string]interface{}{
 			"interval":     intervalEntry.Text,
 			"oversampling": osMap[oversamplingSelect.Selected],
@@ -97,7 +104,9 @@ func bme280Tab() *fyne.Container {
 
 	// Auto-Refresh
 	go func() {
-		for range time.Tick(2 * time.Second) { readFn() }
+		for range time.Tick(2 * time.Second) {
+			readFn()
+		}
 	}()
 
 	return container.NewVBox(
@@ -123,17 +132,20 @@ func bme280Tab() *fyne.Container {
 
 // ── GPIO Tab ─────────────────────────────────────────────────────
 func gpioTab() *fyne.Container {
-	pinEntry   := widget.NewEntry()
+	pinEntry := widget.NewEntry()
 	pinEntry.SetPlaceHolder("z.B. 60")
-	dirSelect  := widget.NewSelect([]string{"out", "in"}, nil)
+	dirSelect := widget.NewSelect([]string{"out", "in"}, nil)
 	dirSelect.SetSelected("out")
-	valSelect  := widget.NewSelect([]string{"HIGH (1)", "LOW (0)"}, nil)
+	valSelect := widget.NewSelect([]string{"HIGH (1)", "LOW (0)"}, nil)
 	valSelect.SetSelected("HIGH (1)")
-	status     := widget.NewLabel("")
+	status := widget.NewLabel("")
 
 	configBtn := widget.NewButton("⚙️ Konfigurieren", func() {
 		pin := pinEntry.Text
-		if pin == "" { status.SetText("❌ Pin eingeben!"); return }
+		if pin == "" {
+			status.SetText("❌ Pin eingeben!")
+			return
+		}
 		apiPost("/api/v1/gpio/"+pin+"/export", nil, nil)
 		apiPost("/api/v1/gpio/"+pin+"/direction",
 			map[string]string{"direction": dirSelect.Selected}, nil)
@@ -142,9 +154,14 @@ func gpioTab() *fyne.Container {
 
 	setBtn := widget.NewButton("🔌 Setzen", func() {
 		pin := pinEntry.Text
-		if pin == "" { status.SetText("❌ Pin eingeben!"); return }
+		if pin == "" {
+			status.SetText("❌ Pin eingeben!")
+			return
+		}
 		val := 0
-		if valSelect.Selected == "HIGH (1)" { val = 1 }
+		if valSelect.Selected == "HIGH (1)" {
+			val = 1
+		}
 		apiPost("/api/v1/gpio/"+pin,
 			map[string]interface{}{"value": val, "backend": "auto"}, nil)
 		status.SetText(fmt.Sprintf("✅ Pin %s = %d", pin, val))
@@ -173,7 +190,7 @@ func uartTab() *fyne.Container {
 	sendEntry := widget.NewEntry()
 	sendEntry.SetPlaceHolder("Nachricht...")
 	rxLabel := widget.NewLabel("RX: --")
-	status  := widget.NewLabel("")
+	status := widget.NewLabel("")
 
 	return container.NewVBox(
 		widget.NewCard("UART Konfiguration", "",
@@ -224,7 +241,7 @@ func spiTab() *fyne.Container {
 	txEntry := widget.NewEntry()
 	txEntry.SetPlaceHolder("Hex z.B. 0102FF")
 	rxLabel := widget.NewLabel("RX: --")
-	status  := widget.NewLabel("")
+	status := widget.NewLabel("")
 
 	return container.NewVBox(
 		widget.NewCard("SPI Konfiguration", "",
@@ -236,8 +253,10 @@ func spiTab() *fyne.Container {
 		widget.NewButton("💾 Konfigurieren", func() {
 			var speed, mode int
 			fmt.Sscanf(speedEntry.Text, "%d", &speed)
-			for i, m := range []string{"Mode 0","Mode 1","Mode 2","Mode 3"} {
-				if m == modeSelect.Selected { mode = i }
+			for i, m := range []string{"Mode 0", "Mode 1", "Mode 2", "Mode 3"} {
+				if m == modeSelect.Selected {
+					mode = i
+				}
 			}
 			apiPost("/api/v1/spi/config", map[string]interface{}{
 				"device": deviceSelect.Selected, "speed": speed, "mode": mode}, nil)
@@ -287,9 +306,9 @@ func backendTab() *fyne.Container {
 			container.NewVBox(
 				status,
 				container.NewHBox(
-					mkBtn("⚙️ C Library",    "c"),
+					mkBtn("⚙️ C Library", "c"),
 					mkBtn("🦀 Rust Library", "rust"),
-					mkBtn("🔄 Auto Fallback","auto"),
+					mkBtn("🔄 Auto Fallback", "auto"),
 				),
 			)),
 	)
@@ -302,7 +321,8 @@ func systemTab() *fyne.Container {
 	refreshFn := func() {
 		var d map[string]interface{}
 		if err := apiGet("/health", &d); err != nil {
-			statusLabel.SetText("❌ Offline: " + err.Error()); return
+			statusLabel.SetText("❌ Offline: " + err.Error())
+			return
 		}
 		statusLabel.SetText(fmt.Sprintf(
 			"✅ Online | Backend: %s | Driver: %s | Arch: %s",
@@ -310,7 +330,9 @@ func systemTab() *fyne.Container {
 	}
 
 	go func() {
-		for range time.Tick(5 * time.Second) { refreshFn() }
+		for range time.Tick(5 * time.Second) {
+			refreshFn()
+		}
 	}()
 	refreshFn()
 

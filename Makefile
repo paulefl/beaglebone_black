@@ -22,7 +22,23 @@ cli:
 	  go build -o ../../bin/bbcli-linux-amd64 .
 
 test:
-	cd go-api && go test ./pkg/hal/... -v
+	./scripts/test.sh
+
+test-ci:
+	./scripts/test.sh -ci
+
+test-cover:
+	./scripts/test.sh -cover -html
+
+lint:
+	cd go-api && go vet ./pkg/hal/ ./pkg/hal/mock/ ./pkg/hal/config/
+	cd tools/cli && go mod tidy && go vet ./...
+	cd tools/tui && go mod tidy && go vet ./...
+	test -z "$$(gofmt -l go-api/ tools/)" || (echo "❌ Formatierung prüfen: gofmt -w ." && exit 1)
+	@echo "✅ Lint OK"
+
+test-python:
+	pytest tests/api/ -v --timeout=10
 
 deploy:
 	scp bin/embedded go-api/libs/libhardware.so go-api/libs/libhardware_rs.so \
@@ -34,4 +50,4 @@ clean:
 	cd rust-lib && cargo clean
 	rm -f bin/embedded bin/bbcli-*
 
-.PHONY: all c-lib rust-lib go-api cli test deploy clean
+.PHONY: all c-lib rust-lib go-api cli test test-ci test-cover lint test-python deploy clean

@@ -68,20 +68,23 @@ type bme280Data struct {
 }
 
 // ── Messages ─────────────────────────────────────────────────────
-type bme280Msg  bme280Data
-type statusMsg  struct{ text string; ok bool }
-type tickMsg    time.Time
+type bme280Msg bme280Data
+type statusMsg struct {
+	text string
+	ok   bool
+}
+type tickMsg time.Time
 
 // ── Model ────────────────────────────────────────────────────────
 type model struct {
-	activeTab   tabID
-	bme280      bme280Data
-	status      string
-	statusOK    bool
-	backend     string
-	gpioPin     string
-	width       int
-	height      int
+	activeTab tabID
+	bme280    bme280Data
+	status    string
+	statusOK  bool
+	backend   string
+	gpioPin   string
+	width     int
+	height    int
 }
 
 func initialModel() model {
@@ -91,7 +94,9 @@ func initialModel() model {
 // ── API Helper ───────────────────────────────────────────────────
 func apiGet(path string, out interface{}) error {
 	resp, err := http.Get(apiBase + path)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	defer resp.Body.Close()
 	return json.NewDecoder(resp.Body).Decode(out)
 }
@@ -114,7 +119,9 @@ func setBackendCmd(backend string) tea.Cmd {
 			"application/json",
 			strings.NewReader(`{"backend":"`+backend+`"}`),
 		)
-		if err != nil { return statusMsg{"❌ Backend Fehler", false} }
+		if err != nil {
+			return statusMsg{"❌ Backend Fehler", false}
+		}
 		resp.Body.Close()
 		return statusMsg{"✅ Backend → " + backend, true}
 	}
@@ -153,12 +160,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "q", "ctrl+c":
 			return m, tea.Quit
-		case "1": m.activeTab = tabBME280
-		case "2": m.activeTab = tabGPIO
-		case "3": m.activeTab = tabUART
-		case "4": m.activeTab = tabSPI
-		case "5": m.activeTab = tabBackend
-		case "6": m.activeTab = tabSystem
+		case "1":
+			m.activeTab = tabBME280
+		case "2":
+			m.activeTab = tabGPIO
+		case "3":
+			m.activeTab = tabUART
+		case "4":
+			m.activeTab = tabSPI
+		case "5":
+			m.activeTab = tabBackend
+		case "6":
+			m.activeTab = tabSystem
 		case "tab":
 			m.activeTab = (m.activeTab + 1) % 6
 		case "r":
@@ -204,10 +217,14 @@ func (m model) View() string {
 
 	// Tab Inhalt
 	switch m.activeTab {
-	case tabBME280:  sb.WriteString(m.bme280View())
-	case tabGPIO:    sb.WriteString(m.gpioView())
-	case tabBackend: sb.WriteString(m.backendView())
-	default:         sb.WriteString(cardStyle.Render(labelStyle.Render("In Entwicklung...")))
+	case tabBME280:
+		sb.WriteString(m.bme280View())
+	case tabGPIO:
+		sb.WriteString(m.gpioView())
+	case tabBackend:
+		sb.WriteString(m.backendView())
+	default:
+		sb.WriteString(cardStyle.Render(labelStyle.Render("In Entwicklung...")))
 	}
 
 	// Status
@@ -270,7 +287,7 @@ func (m model) backendView() string {
 		rows += style.Render(fmt.Sprintf("[%s] %s %s\n", b.key, b.icon, b.name))
 	}
 	content := rows + "\n" + labelStyle.Render("Taste drücken zum Wechseln")
-	return cardStyle.Render("🔧 HAL Backend\n\n"+content)
+	return cardStyle.Render("🔧 HAL Backend\n\n" + content)
 }
 
 func main() {
