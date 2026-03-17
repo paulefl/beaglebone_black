@@ -200,7 +200,7 @@ jobs:
           restore-keys: test-trend-
 
       - name: CLI Binary laden
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: bbcli-linux-amd64
           path: bin/
@@ -308,7 +308,7 @@ jobs:
 
       # ── Artefakte hochladen ───────────────────────────────────────────────────
       - name: Upload Reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: test-reports-${{ github.run_number }}
