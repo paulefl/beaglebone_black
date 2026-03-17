@@ -22,7 +22,13 @@ cli:
 	  go build -o ../../bin/bbcli-linux-amd64 .
 
 test:
-	cd go-api && go test ./pkg/hal/... -v
+	./scripts/test.sh
+
+test-ci:
+	./scripts/test.sh -ci
+
+test-cover:
+	./scripts/test.sh -cover -html
 
 deploy:
 	scp bin/embedded go-api/libs/libhardware.so go-api/libs/libhardware_rs.so \

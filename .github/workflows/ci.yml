@@ -20,16 +20,7 @@ jobs:
           cache: true
 
       - name: Go Unit Tests
-        run: |
-          cd go-api
-          go test ./pkg/hal/... -v -count=1 -timeout 30s \
-            -coverprofile=coverage.out -covermode=atomic
-          go tool cover -func=coverage.out
-
-      - name: Race Condition Tests
-        run: |
-          cd go-api
-          go test ./pkg/hal/... -race -count=3 -timeout 60s
+        run: make test-ci
 
       - name: Upload Coverage
         uses: codecov/codecov-action@v5
