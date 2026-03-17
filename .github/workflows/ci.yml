@@ -32,7 +32,7 @@ jobs:
           go test ./pkg/hal/... -race -count=3 -timeout 60s
 
       - name: Upload Coverage
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           file: go-api/coverage.out
           flags: hal-unit-tests
