@@ -109,7 +109,7 @@ install_rust() {
 install_python_deps() {
     log "Installiere Python Test-Dependencies..."
     if command -v pip3 &>/dev/null; then
-        pip3 install --quiet pytest requests pytest-json-report
+        pip3 install --quiet -r "$REPO_ROOT/tests/requirements-dev.txt"
         success "Python Deps installiert"
     else
         warn "pip3 nicht gefunden — Python Tests nicht verfügbar"
@@ -160,7 +160,7 @@ main() {
             echo "  go      — Go $GO_VERSION + go mod tidy"
             echo "  arm     — ARM Cross-Compiler"
             echo "  rust    — Rust + cross + cbindgen"
-            echo "  python  — pytest + requests"
+            echo "  python  — pytest + pytest-timeout + pytest-json-report + requests"
             echo "  tidy    — Nur go mod tidy"
             echo "  verify  — go vet + Tests"
             exit 1

@@ -32,8 +32,13 @@ test-cover:
 
 lint:
 	cd go-api && go vet ./pkg/hal/ ./pkg/hal/mock/ ./pkg/hal/config/
+	cd tools/cli && go mod tidy && go vet ./...
+	cd tools/tui && go mod tidy && go vet ./...
 	test -z "$$(gofmt -l go-api/ tools/)" || (echo "❌ Formatierung prüfen: gofmt -w ." && exit 1)
 	@echo "✅ Lint OK"
+
+test-python:
+	pytest tests/api/ -v --timeout=10
 
 deploy:
 	scp bin/embedded go-api/libs/libhardware.so go-api/libs/libhardware_rs.so \
@@ -45,4 +50,4 @@ clean:
 	cd rust-lib && cargo clean
 	rm -f bin/embedded bin/bbcli-*
 
-.PHONY: all c-lib rust-lib go-api cli test test-ci test-cover lint deploy clean
+.PHONY: all c-lib rust-lib go-api cli test test-ci test-cover lint test-python deploy clean
