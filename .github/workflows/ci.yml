@@ -279,6 +279,11 @@ jobs:
                 f"Coverage: {avg_cov}%  [{len(trend)} Trend-Einträge]")
           EOF
 
+      # ── Trend in GitHub Actions Summary schreiben ────────────────────────────
+      - name: Trend Summary schreiben
+        if: always()
+        run: python3 scripts/trend_summary.py
+
       # ── Trend-Cache speichern (überschreibt nicht, legt neuen Eintrag an) ─────
       - name: Trend-Cache speichern
         uses: actions/cache/save@v4
