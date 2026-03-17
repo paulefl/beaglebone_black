@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	"myproject/pkg/hal"
 	"myproject/pkg/hal/config"
+	"myproject/pkg/hal/loader"
 )
 
 var hw hal.HardwareDriver
@@ -16,7 +17,7 @@ var hw hal.HardwareDriver
 func main() {
 	cfg := config.LoadConfig()
 	var err error
-	hw, err = hal.NewDriver(cfg)
+	hw, err = loader.NewDriver(cfg)
 	if err != nil { log.Fatalf("HAL init: %v", err) }
 	defer hw.Close()
 	log.Printf("Driver: %s Backend: %s", hw.Name(), hw.Backend())
