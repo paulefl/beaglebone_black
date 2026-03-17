@@ -1,0 +1,110 @@
+= .buildadoc Build System
+:toc: left
+:sectnums:
+
+== Übersicht
+
+Das `.buildadoc` System steuert, welche AsciiDoc Dateien
+automatisch durch die Drone CI Pipeline gebaut werden.
+
+== Funktionsweise
+
+[source]
+----
+project/
+├── arch/
+│   ├── .buildadoc          ← ✅ Trigger-Datei
+│   ├── architektur.adoc    ← wird gebaut (HTML + PDF)
+│   └── diagrams/
+│       └── *.puml
+│
+├── docs/
+│   ├── .buildadoc          ← ✅ Trigger-Datei
+│   ├── handbuch.adoc       ← wird gebaut
+│   └── api_doku.adoc       ← wird gebaut
+│
+└── notizen/
+    └── todo.adoc           ← ⏭ IGNORIERT (kein .buildadoc)
+----
+
+== .buildadoc Konfiguration
+
+[source,yaml]
+----
+# Ausgabeformate
+formats: html,pdf
+
+# PlantUML Diagramme rendern
+plantuml: true
+
+# Sprache
+lang: de
+
+# Inhaltsverzeichnis
+toc: left
+
+# Abschnittsnummern
+numbered: true
+
+# Autor
+author: Mein Name
+
+# PDF Theme
+theme: dark
+----
+
+== Trigger Logik
+
+Der Build Step prüft für jede gefundene `*.adoc` Datei:
+
+. Liegt `.buildadoc` im *selben Verzeichnis*?
+. Wenn ja → baue HTML und/oder PDF
+. Wenn nein → Datei wird übersprungen
+
+== Neue Dokumentation hinzufügen
+
+[source,bash]
+----
+# 1. Ordner anlegen
+mkdir -p docs/meine-doku
+
+# 2. Marker-Datei erstellen
+cat > docs/meine-doku/.buildadoc << EOF
+formats: html,pdf
+plantuml: true
+lang: de
+author: Mein Name
+EOF
+
+# 3. AsciiDoc Datei schreiben
+cat > docs/meine-doku/mein-dokument.adoc << EOF
+= Mein Dokument
+:toc: left
+
+== Kapitel 1
+Inhalt...
+EOF
+
+# 4. Commit & Push → CI baut automatisch
+git add docs/meine-doku/
+git commit -m "Add neue Dokumentation"
+git push
+----
+
+== Ausgabe
+
+Alle gebauten Dateien landen in `/workspace/docs/`
+mit der gleichen Ordnerstruktur wie die Quellen:
+
+[source]
+----
+/workspace/docs/
+├── arch/
+│   ├── architektur.html
+│   └── architektur.pdf
+└── docs/
+    ├── handbuch.html
+    ├── handbuch.pdf
+    ├── api_doku.html
+    └── api_doku.pdf
+----

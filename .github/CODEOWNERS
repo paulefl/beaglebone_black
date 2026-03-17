@@ -1,0 +1,33 @@
+# CODEOWNERS — Automatische Reviewer-Zuweisung
+# Format: <Pfad> <GitHub-User>
+
+# Globaler Owner
+*                           @team-embedded
+
+# C Library
+c-lib/                      @c-hardware-team
+
+# Rust Library
+rust-lib/                   @rust-hardware-team
+
+# Go API + HAL
+go-api/                     @go-api-team
+go-api/pkg/hal/             @hal-team
+
+# Tools
+tools/cli/                  @tools-team
+tools/tui/                  @tools-team
+tools/desktop-gui/          @tools-team
+tools/web-gui/              @frontend-team
+
+# CI/CD
+.drone.yml                  @devops-team
+.github/                    @devops-team
+
+# Dokumentation
+arch/                       @docs-team
+*.md                        @docs-team
+*.adoc                      @docs-team
+
+# Tests
+tests/                      @qa-team

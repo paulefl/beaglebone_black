@@ -1,0 +1,764 @@
+# ════════════════════════════════════════════════════════════════
+# BeagleBone Black — Vollständige Drone CI Pipeline
+# Alle 7 Pipelines + Nightly
+# ════════════════════════════════════════════════════════════════
+
+---
+# ════════════════════════════════════════
+# PIPELINE 1 — C & Rust Libraries
+# ════════════════════════════════════════
+kind: pipeline
+type: docker
+name: 1-libraries
+
+trigger:
+  event: [push, pull_request, tag]
+  paths:
+    include: [c-lib/**, rust-lib/**, .drone.yml]
+
+steps:
+  - name: build-c-lib
+    image: debian:bookworm
+    volumes:
+      - name: libs-cache
+        path: /build/libs
+    commands:
+      - apt-get update -q
+      - apt-get install -y -q gcc-arm-linux-gnueabihf make libmicrohttpd-dev
+      - make c-lib
+      - cp c-lib/libhardware.so /build/libs/
+
+  - name: build-rust-lib
+    image: rust:1.77
+    depends_on: []
+    volumes:
+      - name: cargo-cache
+        path: /usr/local/cargo/registry
+      - name: libs-cache
+        path: /build/libs
+    commands:
+      - cargo install cross cbindgen
+      - make rust-lib
+      - cp rust-lib/target/armv7-unknown-linux-musleabihf/release/libhardware_rs.so /build/libs/
+      - cbindgen --config rust-lib/cbindgen.toml --output /build/libs/include/hardware_rs.h
+
+  - name: test-c-lib
+    image: debian:bookworm
+    depends_on: [build-c-lib]
+    commands:
+      - apt-get update -q && apt-get install -y -q gcc make
+      - make test-c
+
+  - name: test-rust-lib
+    image: rust:1.77-alpine
+    depends_on: [build-rust-lib]
+    volumes:
+      - name: cargo-cache
+        path: /usr/local/cargo/registry
+    commands:
+      - apk add --no-cache musl-dev
+      - cargo test --manifest-path rust-lib/Cargo.toml
+
+volumes:
+  - name: libs-cache
+    host:
+      path: /tmp/drone-cache/libs
+  - name: cargo-cache
+    host:
+      path: /tmp/drone-cache/cargo
+
+---
+# ════════════════════════════════════════
+# PIPELINE 2 — Embedded SW (Go API + HAL)
+# ════════════════════════════════════════
+kind: pipeline
+type: docker
+name: 2-embedded-sw
+
+trigger:
+  event: [push, pull_request, tag]
+  paths:
+    include: [go-api/**, c-lib/**, rust-lib/**, .drone.yml]
+
+depends_on: [1-libraries]
+
+steps:
+  - name: test-hal-unit
+    image: golang:1.22-alpine
+    volumes:
+      - name: go-cache
+        path: /go/pkg/mod
+    commands:
+      - cd go-api
+      - go test ./pkg/hal/... -v -count=1 -timeout 30s -coverprofile=coverage.out
+      - go tool cover -func=coverage.out
+
+  - name: test-hal-race
+    image: golang:1.22-alpine
+    depends_on: [test-hal-unit]
+    volumes:
+      - name: go-cache
+        path: /go/pkg/mod
+    commands:
+      - cd go-api && go test ./pkg/hal/... -race -count=3 -timeout 60s
+
+  - name: build-go-api
+    image: golang:1.22
+    depends_on: [test-hal-unit]
+    volumes:
+      - name: go-cache
+        path: /go/pkg/mod
+      - name: libs-cache
+        path: /build/libs
+    environment:
+      CGO_ENABLED: "1"
+      GOOS: linux
+      GOARCH: arm
+      GOARM: "7"
+      CC: arm-linux-gnueabihf-gcc
+    commands:
+      - apt-get update -q && apt-get install -y -q gcc-arm-linux-gnueabihf
+      - cp -r /build/libs go-api/libs/
+      - cd go-api
+      - go build -ldflags="-s -w -X main.Version=${DRONE_TAG:-dev}" -o ../bin/embedded-armv7 ./cmd/
+
+  - name: test-api-integration
+    image: python:3.12-alpine
+    depends_on: [test-hal-unit]
+    commands:
+      - pip install pytest requests --break-system-packages -q
+      - pytest tests/api/ -v --timeout=30 || true
+
+  - name: qemu-setup
+    image: multiarch/qemu-user-static
+    depends_on: [build-go-api]
+    privileged: true
+    commands:
+      - /register --reset -p yes
+
+  - name: test-simulation-armv7
+    image: arm32v7/debian:bookworm-slim
+    depends_on: [qemu-setup]
+    platform: linux/arm/v7
+    commands:
+      - ./bin/embedded-armv7 --test --timeout 30 || true
+
+  - name: deploy-beaglebone
+    image: alpine
+    depends_on: [build-go-api, test-api-integration]
+    environment:
+      BEAGLE_HOST: {from_secret: beagle_host}
+      BEAGLE_USER: {from_secret: beagle_user}
+      BEAGLE_KEY:  {from_secret: beagle_ssh_key}
+    commands:
+      - apk add --no-cache openssh-client
+      - mkdir -p ~/.ssh
+      - echo "$BEAGLE_KEY" > ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa
+      - ssh-keyscan -H $BEAGLE_HOST >> ~/.ssh/known_hosts
+      - scp bin/embedded-armv7 go-api/libs/libhardware.so go-api/libs/libhardware_rs.so
+          $BEAGLE_USER@$BEAGLE_HOST:/app/
+      - ssh $BEAGLE_USER@$BEAGLE_HOST "systemctl restart embedded-sw && sleep 3 && systemctl is-active embedded-sw"
+    when:
+      branch: [main]
+      event:  [push]
+
+  - name: test-hardware-c
+    image: python:3.12-alpine
+    depends_on: [deploy-beaglebone]
+    environment:
+      BEAGLE_HOST: {from_secret: beagle_host}
+      HW_BACKEND: c
+    commands:
+      - pip install pytest requests --break-system-packages -q
+      - pytest tests/hardware/ -v --timeout=60
+    when:
+      branch: [main]
+      event:  [push]
+
+  - name: test-hardware-rust
+    image: python:3.12-alpine
+    depends_on: [deploy-beaglebone]
+    environment:
+      BEAGLE_HOST: {from_secret: beagle_host}
+      HW_BACKEND: rust
+    commands:
+      - pip install pytest requests --break-system-packages -q
+      - curl -X POST http://$BEAGLE_HOST:5000/api/v1/backend -d '{"backend":"rust"}'
+      - pytest tests/hardware/ -v --timeout=60
+    when:
+      branch: [main]
+      event:  [push]
+
+  - name: test-hardware-auto
+    image: python:3.12-alpine
+    depends_on: [test-hardware-c, test-hardware-rust]
+    environment:
+      BEAGLE_HOST: {from_secret: beagle_host}
+    commands:
+      - pip install pytest requests --break-system-packages -q
+      - pytest tests/hardware/ -v --timeout=60
+    when:
+      branch: [main]
+      event:  [push]
+
+volumes:
+  - name: go-cache
+    host:
+      path: /tmp/drone-cache/go
+  - name: libs-cache
+    host:
+      path: /tmp/drone-cache/libs
+
+---
+# ════════════════════════════════════════
+# PIPELINE 3 — Tools (CLI + GUIs)
+# ════════════════════════════════════════
+kind: pipeline
+type: docker
+name: 3-tools
+
+trigger:
+  event: [push, pull_request, tag]
+  paths:
+    include: [tools/**, .drone.yml]
+
+steps:
+  - name: lint-cli
+    image: golang:1.22-alpine
+    volumes:
+      - name: go-cache
+        path: /go/pkg/mod
+    commands:
+      - cd tools/cli && go vet ./...
+      - gofmt -l . | grep . && exit 1 || true
+
+  - name: lint-tui
+    image: golang:1.22-alpine
+    depends_on: []
+    volumes:
+      - name: go-cache
+        path: /go/pkg/mod
+    commands:
+      - cd tools/tui && go vet ./...
+
+  - name: lint-desktop
+    image: golang:1.22-alpine
+    depends_on: []
+    volumes:
+      - name: go-cache
+        path: /go/pkg/mod
+    commands:
+      - cd tools/desktop-gui && go vet ./...
+
+  - name: test-cli
+    image: golang:1.22-alpine
+    depends_on: [lint-cli]
+    volumes:
+      - name: go-cache
+        path: /go/pkg/mod
+    commands:
+      - cd tools/cli && go test ./... -v -count=1
+
+  - name: test-web-gui
+    image: python:3.12-alpine
+    commands:
+      - python -c "from html.parser import HTMLParser; class V(HTMLParser): pass; V().feed(open('tools/web-gui/index.html').read()); print('✅ HTML valide')"
+
+  - name: test-installer-syntax
+    image: bash:5
+    commands:
+      - bash -n scripts/install.sh && echo "✅ install.sh Syntax OK"
+      - bash -n scripts/build_adoc.sh && echo "✅ build_adoc.sh Syntax OK"
+
+  - name: build-cli-linux-amd64
+    image: golang:1.22-alpine
+    depends_on: [test-cli]
+    volumes:
+      - name: go-cache
+        path: /go/pkg/mod
+    environment:
+      GOOS: linux
+      GOARCH: amd64
+      CGO_ENABLED: "0"
+    commands:
+      - cd tools/cli
+      - go build -ldflags="-s -w -X main.Version=${DRONE_TAG:-dev}" -o ../../bin/bbcli-linux-amd64 .
+
+  - name: build-cli-linux-armv7
+    image: golang:1.22-alpine
+    depends_on: [test-cli]
+    volumes:
+      - name: go-cache
+        path: /go/pkg/mod
+    environment:
+      GOOS: linux
+      GOARCH: arm
+      GOARM: "7"
+      CGO_ENABLED: "0"
+    commands:
+      - cd tools/cli && go build -ldflags="-s -w" -o ../../bin/bbcli-linux-armv7 .
+
+  - name: build-cli-darwin
+    image: golang:1.22-alpine
+    depends_on: [test-cli]
+    environment:
+      GOOS: darwin
+      GOARCH: amd64
+      CGO_ENABLED: "0"
+    commands:
+      - cd tools/cli && go build -ldflags="-s -w" -o ../../bin/bbcli-darwin-amd64 .
+
+  - name: build-cli-windows
+    image: golang:1.22-alpine
+    depends_on: [test-cli]
+    environment:
+      GOOS: windows
+      GOARCH: amd64
+      CGO_ENABLED: "0"
+    commands:
+      - cd tools/cli && go build -ldflags="-s -w" -o ../../bin/bbcli-windows-amd64.exe .
+
+  - name: build-tui-linux-amd64
+    image: golang:1.22-alpine
+    depends_on: [lint-tui]
+    environment:
+      GOOS: linux
+      GOARCH: amd64
+      CGO_ENABLED: "0"
+    commands:
+      - cd tools/tui && go build -ldflags="-s -w" -o ../../bin/bbtui-linux-amd64 .
+
+  - name: build-tui-linux-armv7
+    image: golang:1.22-alpine
+    depends_on: [lint-tui]
+    environment:
+      GOOS: linux
+      GOARCH: arm
+      GOARM: "7"
+      CGO_ENABLED: "0"
+    commands:
+      - cd tools/tui && go build -ldflags="-s -w" -o ../../bin/bbtui-linux-armv7 .
+
+  - name: build-desktop-linux
+    image: golang:1.22
+    depends_on: [lint-desktop]
+    environment:
+      GOOS: linux
+      GOARCH: amd64
+      CGO_ENABLED: "1"
+    commands:
+      - apt-get update -q
+      - apt-get install -y -q libgl1-mesa-dev xorg-dev
+      - cd tools/desktop-gui && go build -ldflags="-s -w" -o ../../bin/bbgui-linux-amd64 .
+
+  - name: checksums
+    image: alpine
+    depends_on:
+      - build-cli-linux-amd64
+      - build-cli-linux-armv7
+      - build-cli-darwin
+      - build-cli-windows
+      - build-tui-linux-amd64
+      - build-tui-linux-armv7
+      - build-desktop-linux
+    commands:
+      - cd bin
+      - sha256sum bbcli-* bbtui-* bbgui-* > checksums.sha256
+      - cat checksums.sha256
+
+volumes:
+  - name: go-cache
+    host:
+      path: /tmp/drone-cache/go
+
+---
+# ════════════════════════════════════════
+# PIPELINE 4 — WebApp Frontend
+# ════════════════════════════════════════
+kind: pipeline
+type: docker
+name: 4-webapp
+
+trigger:
+  event: [push, pull_request, tag]
+
+steps:
+  - name: test-web-gui-html
+    image: python:3.12-alpine
+    commands:
+      - python -c "from html.parser import HTMLParser; class V(HTMLParser): pass; V().feed(open('tools/web-gui/index.html').read()); print('✅ OK')"
+
+  - name: package-web-gui
+    image: alpine
+    depends_on: [test-web-gui-html]
+    commands:
+      - apk add --no-cache zip
+      - mkdir -p bin/web-gui
+      - cp tools/web-gui/index.html bin/web-gui/
+      - echo "${DRONE_TAG:-dev}" > bin/web-gui/version.txt
+      - cd bin && zip -r bbweb-gui.zip web-gui/
+
+---
+# ════════════════════════════════════════
+# PIPELINE 5 — Release (nur bei Tags)
+# ════════════════════════════════════════
+kind: pipeline
+type: docker
+name: 5-release
+
+trigger:
+  event: [tag]
+
+depends_on: [1-libraries, 2-embedded-sw, 3-tools, 4-webapp, 7-reports]
+
+steps:
+  - name: docker-embedded
+    image: quay.io/podman/stable
+    privileged: true
+    volumes:
+      - name: podman-sock
+        path: /var/run/docker.sock
+    environment:
+      REGISTRY_USER: {from_secret: registry_user}
+      REGISTRY_TOKEN: {from_secret: registry_token}
+    commands:
+      - podman login -u $REGISTRY_USER -p $REGISTRY_TOKEN docker.io
+      - podman build --platform linux/arm/v7 -f go-api/Dockerfile.embedded
+          -t myuser/embedded-sw:${DRONE_TAG} -t myuser/embedded-sw:latest .
+      - podman push myuser/embedded-sw:${DRONE_TAG}
+      - podman push myuser/embedded-sw:latest
+
+  - name: gitea-release
+    image: plugins/gitea-release
+    depends_on: [docker-embedded]
+    settings:
+      api_key:  {from_secret: gitea_token}
+      base_url: {from_secret: gitea_url}
+      files:
+        - bin/embedded-armv7
+        - go-api/libs/libhardware.so
+        - go-api/libs/libhardware_rs.so
+        - bin/bbcli-linux-amd64
+        - bin/bbcli-linux-armv7
+        - bin/bbcli-darwin-amd64
+        - bin/bbcli-windows-amd64.exe
+        - bin/bbtui-linux-amd64
+        - bin/bbtui-linux-armv7
+        - bin/bbgui-linux-amd64
+        - bin/bbweb-gui.zip
+        - reports/bb_dashboard.html
+        - reports/bb_report.pdf
+        - arch/sw_architektur.pdf
+        - scripts/install.sh
+        - bin/checksums.sha256
+      checksum: [sha256]
+      title: "Release ${DRONE_TAG}"
+
+volumes:
+  - name: podman-sock
+    host:
+      path: /run/user/1000/podman/podman.sock
+
+---
+# ════════════════════════════════════════
+# PIPELINE 6 — Nightly (täglich 02:00)
+# ════════════════════════════════════════
+kind: pipeline
+type: docker
+name: 6-nightly
+
+trigger:
+  event: [cron]
+  cron: [nightly]
+
+steps:
+  - name: nightly-test-all-backends
+    image: python:3.12-alpine
+    environment:
+      BEAGLE_HOST: {from_secret: beagle_host}
+    commands:
+      - pip install pytest requests --break-system-packages -q
+      - |
+        for backend in c rust auto; do
+          echo "=== Testing Backend: $backend ==="
+          HW_BACKEND=$backend pytest tests/hardware/ -v --timeout=60 || exit 1
+        done
+
+  - name: notify-slack
+    image: plugins/slack
+    depends_on: [nightly-test-all-backends]
+    settings:
+      webhook: {from_secret: slack_webhook}
+      channel: builds
+      template: >
+        Nightly Build {{build.number}} — {{build.status}} {{build.link}}
+    when:
+      status: [success, failure]
+
+---
+# ════════════════════════════════════════
+# PIPELINE 7 — Reports & Dokumentation
+# ════════════════════════════════════════
+kind: pipeline
+type: docker
+name: 7-reports
+
+trigger:
+  event: [push, pull_request, tag]
+  paths:
+    include:
+      - tests/**
+      - requirements.json
+      - go-api/**
+      - tools/**
+      - reports/**
+      - arch/**
+      - "**/*.adoc"
+      - "**/.buildadoc"
+      - .drone.yml
+
+depends_on: [2-embedded-sw, 3-tools]
+
+steps:
+  - name: run-go-tests
+    image: golang:1.22-alpine
+    volumes:
+      - name: report-workspace
+        path: /workspace
+      - name: go-cache
+        path: /go/pkg/mod
+    commands:
+      - cd go-api
+      - go test ./pkg/hal/... -v -count=1 -json > /workspace/go_hal_tests.json || true
+      - go test ./pkg/hal/... -coverprofile=/workspace/go_coverage.out -covermode=atomic || true
+
+  - name: run-api-tests
+    image: python:3.12-alpine
+    depends_on: [run-go-tests]
+    volumes:
+      - name: report-workspace
+        path: /workspace
+    commands:
+      - pip install pytest pytest-json-report requests --break-system-packages -q
+      - pytest tests/api/ -v --json-report --json-report-file=/workspace/api_tests.json --timeout=30 || true
+      - pytest tools/tests/cli/ -v --json-report --json-report-file=/workspace/cli_tests.json --timeout=30 || true
+
+  - name: run-hardware-tests
+    image: python:3.12-alpine
+    depends_on: [run-api-tests]
+    volumes:
+      - name: report-workspace
+        path: /workspace
+    environment:
+      BEAGLE_HOST: {from_secret: beagle_host}
+    commands:
+      - pip install pytest pytest-json-report requests --break-system-packages -q
+      - pytest tests/hardware/ -v --json-report --json-report-file=/workspace/hw_tests.json --timeout=120 || true
+    when:
+      branch: [main]
+      event:  [push]
+
+  - name: collect-results
+    image: python:3.12-alpine
+    depends_on: [run-hardware-tests]
+    volumes:
+      - name: report-workspace
+        path: /workspace
+    commands:
+      - python3 reports/collect_results.py
+          --workspace /workspace
+          --requirements requirements.json
+          --output /workspace/merged_requirements.json
+          --meta /workspace/build_meta.json
+
+  - name: generate-reports
+    image: python:3.12
+    depends_on: [collect-results]
+    volumes:
+      - name: report-workspace
+        path: /workspace
+    commands:
+      - pip install reportlab jinja2 --break-system-packages -q
+      - cp /workspace/merged_requirements.json requirements.json
+      - python3 reports/generate_reports.py --output /workspace/reports
+      - ls -lh /workspace/reports/
+
+  - name: generate-architecture
+    image: python:3.12
+    depends_on: [collect-results]
+    volumes:
+      - name: report-workspace
+        path: /workspace
+    commands:
+      - pip install reportlab --break-system-packages -q
+      - python3 arch/generate_arch.py --output /workspace/arch
+      - ls -lh /workspace/arch/
+
+  - name: build-docs
+    image: asciidoctor/docker-asciidoctor:latest
+    depends_on: [collect-results]
+    volumes:
+      - name: report-workspace
+        path: /workspace
+    environment:
+      OUTPUT_DIR: /workspace/docs
+    commands:
+      - gem install asciidoctor-pdf rouge --quiet
+      - chmod +x scripts/build_adoc.sh
+      - ROOT_DIR=. OUTPUT_DIR=/workspace/docs bash scripts/build_adoc.sh
+      - find /workspace/docs -name "*.html" -o -name "*.pdf" | sort
+
+  - name: check-quality-gates
+    image: python:3.12-alpine
+    depends_on: [generate-reports]
+    volumes:
+      - name: report-workspace
+        path: /workspace
+    commands:
+      - python3 << 'PYEOF'
+import json, sys
+with open("/workspace/merged_requirements.json") as f:
+    data = json.load(f)
+tests    = data["test_ergebnisse"]
+all_reqs = [r for k in data["kategorien"] for r in k["requirements"]]
+total    = len(tests)
+best     = sum(1 for t in tests if t["status"] == "BESTANDEN")
+avg_cov  = sum(r["abdeckung"] for r in all_reqs) / len(all_reqs)
+min_cov  = min(r["abdeckung"] for r in all_reqs)
+impl_pct = sum(1 for r in all_reqs if r["status"] == "IMPLEMENTIERT") / len(all_reqs) * 100
+erfolg   = round(best/total*100,1) if total else 0
+print(f"Tests: {best}/{total} ({erfolg}%) | Cov: {avg_cov:.1f}% | Req: {impl_pct:.1f}%")
+gates = [("Erfolgsrate",erfolg,90.0),("Ø Coverage",avg_cov,75.0),
+         ("Min Coverage",min_cov,50.0),("Req. Impl.",impl_pct,80.0)]
+failed = []
+for name,val,thresh in gates:
+    ok = val >= thresh
+    print(f"{'✅' if ok else '❌'} {name}: {val:.1f}% >= {thresh:.1f}%")
+    if not ok: failed.append(f"{name}: {val:.1f}%")
+if failed:
+    for f in failed: print(f"FEHLER: {f}")
+    sys.exit(1)
+print("✅ Alle Quality Gates bestanden!")
+PYEOF
+
+  - name: save-trend
+    image: python:3.12-alpine
+    depends_on: [check-quality-gates]
+    volumes:
+      - name: report-workspace
+        path: /workspace
+      - name: trend-storage
+        path: /trend
+    commands:
+      - python3 << 'PYEOF'
+import json, os
+from datetime import datetime
+with open("/workspace/merged_requirements.json") as f: data = json.load(f)
+tests    = data["test_ergebnisse"]
+all_reqs = [r for k in data["kategorien"] for r in k["requirements"]]
+total    = len(tests); best = sum(1 for t in tests if t["status"] == "BESTANDEN")
+avg_cov  = sum(r["abdeckung"] for r in all_reqs) / len(all_reqs)
+entry    = {"timestamp": datetime.now().isoformat(),
+            "build": os.getenv("DRONE_BUILD_NUMBER","0"),
+            "branch": os.getenv("DRONE_BRANCH","main"),
+            "commit": os.getenv("DRONE_COMMIT_SHA","")[:8],
+            "total_tests": total, "bestanden": best,
+            "erfolgsrate": round(best/total*100,1) if total else 0,
+            "avg_coverage": round(avg_cov,1)}
+trend_file = "/trend/test_trend.json"
+trend = json.load(open(trend_file)) if os.path.exists(trend_file) else []
+trend.append(entry); trend = trend[-100:]
+json.dump(trend, open(trend_file,"w"), indent=2)
+print(f"✅ Trend: Build #{entry['build']} | {entry['erfolgsrate']}% | Cov: {entry['avg_coverage']}%")
+PYEOF
+
+  - name: package-artifacts
+    image: alpine
+    depends_on:
+      - generate-reports
+      - generate-architecture
+      - build-docs
+      - save-trend
+    volumes:
+      - name: report-workspace
+        path: /workspace
+      - name: artifact-storage
+        path: /artifacts
+    commands:
+      - apk add --no-cache zip
+      - OUTDIR=/artifacts/${DRONE_BUILD_NUMBER}
+      - mkdir -p ${OUTDIR}
+      - cp /workspace/reports/*.{html,pdf,md,json} ${OUTDIR}/ 2>/dev/null || true
+      - cp /workspace/arch/*.{html,pdf}            ${OUTDIR}/ 2>/dev/null || true
+      - cp -r /workspace/docs ${OUTDIR}/docs        2>/dev/null || true
+      - cd ${OUTDIR} && zip -r /artifacts/reports-${DRONE_BUILD_NUMBER}.zip .
+      - echo "ZIP: $(du -sh /artifacts/reports-${DRONE_BUILD_NUMBER}.zip | cut -f1)"
+
+  - name: publish-wiki
+    image: alpine
+    depends_on: [package-artifacts]
+    volumes:
+      - name: report-workspace
+        path: /workspace
+    environment:
+      GITEA_TOKEN: {from_secret: gitea_token}
+      GITEA_URL:   {from_secret: gitea_url}
+      GITEA_REPO:  {from_secret: gitea_repo}
+    commands:
+      - apk add --no-cache curl jq
+      - |
+        CONTENT=$(cat /workspace/reports/bb_report.md | jq -Rs .)
+        curl -sf -X POST "${GITEA_URL}/api/v1/repos/${GITEA_REPO}/wiki/pages" \
+          -H "Authorization: token ${GITEA_TOKEN}" \
+          -H "Content-Type: application/json" \
+          -d "{\"title\":\"Test Report Build ${DRONE_BUILD_NUMBER}\",\"content_format\":\"markdown\",\"content\":${CONTENT}}" \
+          && echo "✅ Wiki OK" || echo "⚠️ Wiki fehlgeschlagen"
+    when:
+      branch: [main]
+      event:  [push]
+
+  - name: release-reports
+    image: plugins/gitea-release
+    depends_on: [package-artifacts]
+    settings:
+      api_key:  {from_secret: gitea_token}
+      base_url: {from_secret: gitea_url}
+      files:
+        - /workspace/reports/bb_dashboard.html
+        - /workspace/reports/bb_report.pdf
+        - /workspace/reports/bb_report.md
+        - /workspace/reports/bb_report.json
+        - /workspace/arch/sw_architektur.html
+        - /workspace/arch/sw_architektur.pdf
+        - /artifacts/reports-${DRONE_BUILD_NUMBER}.zip
+      checksum: [sha256]
+    when:
+      event: [tag]
+
+  - name: notify
+    image: plugins/slack
+    depends_on: [check-quality-gates, package-artifacts]
+    settings:
+      webhook: {from_secret: slack_webhook}
+      channel: builds
+      template: |
+        *{{ repo.name }}* Build {{build.number}} {{#success build.status}}✅{{else}}❌{{/success}}
+        Branch: `{{build.branch}}` | 📊 Reports | 🏗 Architektur | 📚 Docs
+        {{build.link}}
+    when:
+      status: [success, failure]
+      branch: [main]
+      event:  [push, tag]
+
+volumes:
+  - name: report-workspace
+    temp: {}
+  - name: go-cache
+    host:
+      path: /tmp/drone-cache/go
+  - name: trend-storage
+    host:
+      path: /var/drone/trend-data
+  - name: artifact-storage
+    host:
+      path: /var/drone/artifacts

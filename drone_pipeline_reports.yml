@@ -1,0 +1,620 @@
+# ════════════════════════════════════════════════════════════════
+# PIPELINE 7 — Reports, Architektur, Dokumentation & Test
+# Enthält: AsciiDoc Build Step mit .buildadoc Trigger
+# ════════════════════════════════════════════════════════════════
+---
+kind: pipeline
+type: docker
+name: 7-reports
+
+trigger:
+  event: [push, pull_request, tag]
+  paths:
+    include:
+      - tests/**
+      - requirements.json
+      - go-api/**
+      - tools/**
+      - reports/**
+      - arch/**
+      - docs/**
+      - "**/*.adoc"
+      - "**/.buildadoc"
+      - .drone.yml
+
+depends_on:
+  - 2-embedded-sw
+  - 3-tools
+
+steps:
+
+  # ════════════════════════════════════════
+  # SCHRITT 1 — Go Unit Tests → JSON
+  # ════════════════════════════════════════
+  - name: run-go-tests
+    image: golang:1.22-alpine
+    volumes:
+      - name: report-workspace
+        path: /workspace
+      - name: go-cache
+        path: /go/pkg/mod
+    commands:
+      - cd go-api
+      - go test ./pkg/hal/...
+          -v -count=1
+          -timeout 60s
+          -json > /workspace/go_hal_tests.json || true
+      - go test ./pkg/hal/...
+          -coverprofile=/workspace/go_coverage.out
+          -covermode=atomic || true
+      - go tool cover
+          -func=/workspace/go_coverage.out
+          > /workspace/go_coverage_func.txt || true
+      - echo "✅ Go Tests abgeschlossen"
+
+  # ════════════════════════════════════════
+  # SCHRITT 2 — Python API + CLI Tests
+  # ════════════════════════════════════════
+  - name: run-api-tests
+    image: python:3.12-alpine
+    depends_on: [run-go-tests]
+    volumes:
+      - name: report-workspace
+        path: /workspace
+    commands:
+      - pip install pytest pytest-json-report
+          requests --break-system-packages -q
+      - pytest tests/api/ -v
+          --json-report
+          --json-report-file=/workspace/api_tests.json
+          --timeout=30 || true
+      - pytest tools/tests/cli/ -v
+          --json-report
+          --json-report-file=/workspace/cli_tests.json
+          --timeout=30 || true
+      - echo "✅ Python Tests abgeschlossen"
+
+  # ════════════════════════════════════════
+  # SCHRITT 3 — Hardware Tests (main only)
+  # ════════════════════════════════════════
+  - name: run-hardware-tests
+    image: python:3.12-alpine
+    depends_on: [run-api-tests]
+    volumes:
+      - name: report-workspace
+        path: /workspace
+    environment:
+      BEAGLE_HOST:
+        from_secret: beagle_host
+    commands:
+      - pip install pytest pytest-json-report
+          requests --break-system-packages -q
+      - pytest tests/hardware/ -v
+          --json-report
+          --json-report-file=/workspace/hw_tests.json
+          --timeout=120 || true
+      - echo "✅ Hardware Tests abgeschlossen"
+    when:
+      branch: [main]
+      event:  [push]
+
+  # ════════════════════════════════════════
+  # SCHRITT 4 — Test Ergebnisse zusammenführen
+  # ════════════════════════════════════════
+  - name: collect-results
+    image: python:3.12-alpine
+    depends_on: [run-hardware-tests]
+    volumes:
+      - name: report-workspace
+        path: /workspace
+    commands:
+      - python3 reports/collect_results.py
+          --workspace /workspace
+          --requirements requirements.json
+          --output /workspace/merged_requirements.json
+          --meta /workspace/build_meta.json
+
+  # ════════════════════════════════════════
+  # SCHRITT 5 — Reports generieren
+  # ════════════════════════════════════════
+  - name: generate-reports
+    image: python:3.12
+    depends_on: [collect-results]
+    volumes:
+      - name: report-workspace
+        path: /workspace
+    commands:
+      - pip install reportlab jinja2
+          --break-system-packages -q
+      - cp /workspace/merged_requirements.json
+          requirements.json
+      - python3 reports/generate_reports.py
+          --output /workspace/reports
+      - |
+        for f in bb_dashboard.html bb_report.pdf \
+                 bb_report.md bb_report.json; do
+          [ -f "/workspace/reports/$f" ] \
+            && echo "✅ $f" \
+            || echo "❌ $f FEHLT"
+        done
+
+  # ════════════════════════════════════════
+  # SCHRITT 6 — Architektur generieren
+  # ════════════════════════════════════════
+  - name: generate-architecture
+    image: python:3.12
+    depends_on: [collect-results]
+    volumes:
+      - name: report-workspace
+        path: /workspace
+    commands:
+      - pip install reportlab --break-system-packages -q
+      - python3 arch/generate_arch.py
+          --output /workspace/arch
+      - |
+        for f in sw_architektur.html sw_architektur.pdf; do
+          [ -f "/workspace/arch/$f" ] \
+            && echo "✅ $f" \
+            || echo "❌ $f FEHLT"
+        done
+
+  # ════════════════════════════════════════
+  # SCHRITT 7 — AsciiDoc Build
+  # Sucht alle *.adoc Dateien wo .buildadoc
+  # im selben Ordner liegt → baut PDF + HTML
+  # ════════════════════════════════════════
+  - name: build-docs
+    image: asciidoctor/docker-asciidoctor:latest
+    depends_on: [collect-results]    # Parallel zu Reports
+    volumes:
+      - name: report-workspace
+        path: /workspace
+      - name: plantuml-cache
+        path: /tmp/plantuml-cache
+    environment:
+      ROOT_DIR:    "."
+      OUTPUT_DIR:  "/workspace/docs"
+    commands:
+      # ── PlantUML installieren ──────────────────
+      - apk add --no-cache graphviz openjdk17-jre wget -q
+      - |
+        if [ ! -f /usr/local/bin/plantuml.jar ]; then
+          wget -q -O /usr/local/bin/plantuml.jar \
+            https://github.com/plantuml/plantuml/releases/\
+latest/download/plantuml.jar
+        fi
+      # Wrapper Script für plantuml
+      - |
+        cat > /usr/local/bin/plantuml << 'EOF'
+        #!/bin/sh
+        java -jar /usr/local/bin/plantuml.jar "$@"
+        EOF
+      - chmod +x /usr/local/bin/plantuml
+
+      # ── Ruby Gems installieren ─────────────────
+      - gem install asciidoctor-pdf
+          asciidoctor-diagram rouge --quiet
+
+      # ── Build Script ausführen ─────────────────
+      - chmod +x scripts/build_adoc.sh
+      - |
+        echo "════════════════════════════════════════"
+        echo "  Suche .adoc Dateien mit .buildadoc..."
+        echo "════════════════════════════════════════"
+
+        # Alle .adoc Dateien mit .buildadoc Marker finden
+        find . \
+          -name "*.adoc" \
+          -not -path "*/node_modules/*" \
+          -not -path "*/.git/*" \
+          -not -path "*/vendor/*" \
+          -not -path "*/.cache/*" \
+          | sort \
+          | while read -r adoc_file; do
+              dir=$(dirname "$adoc_file")
+              marker="${dir}/.buildadoc"
+
+              if [ -f "$marker" ]; then
+                echo ""
+                echo "📄 Gefunden: $adoc_file"
+                echo "🔖 Marker:  $marker"
+
+                # Konfiguration aus .buildadoc lesen
+                FORMATS=$(grep "^formats:" "$marker" \
+                  | cut -d: -f2 | xargs || echo "html,pdf")
+                PLANTUML=$(grep "^plantuml:" "$marker" \
+                  | cut -d: -f2 | xargs || echo "true")
+                LANG=$(grep "^lang:" "$marker" \
+                  | cut -d: -f2 | xargs || echo "de")
+                AUTHOR=$(grep "^author:" "$marker" \
+                  | cut -d: -f2 | xargs || echo "")
+
+                # Ausgabepfad spiegelt Quellstruktur
+                REL_DIR=$(realpath --relative-to="." "$dir")
+                OUT_DIR="/workspace/docs/${REL_DIR}"
+                mkdir -p "$OUT_DIR"
+
+                # Gemeinsame Argumente
+                COMMON_ARGS="-a lang=${LANG}"
+                COMMON_ARGS="$COMMON_ARGS -a toc=left"
+                COMMON_ARGS="$COMMON_ARGS -a sectnums"
+                COMMON_ARGS="$COMMON_ARGS -a revdate=$(date +%Y-%m-%d)"
+                COMMON_ARGS="$COMMON_ARGS -a source-highlighter=rouge"
+                COMMON_ARGS="$COMMON_ARGS -a rouge-style=monokai"
+                COMMON_ARGS="$COMMON_ARGS --base-dir $dir"
+                [ -n "$AUTHOR" ] && \
+                  COMMON_ARGS="$COMMON_ARGS -a author=$AUTHOR"
+
+                # PlantUML aktivieren
+                if [ "$PLANTUML" = "true" ]; then
+                  COMMON_ARGS="$COMMON_ARGS \
+                    -r asciidoctor-diagram \
+                    -a diagram-cachedir=$OUT_DIR/.cache"
+                fi
+
+                BASE=$(basename "$adoc_file" .adoc)
+                BUILD_OK=true
+
+                # ── HTML bauen ─────────────────────────
+                if echo "$FORMATS" | grep -q "html"; then
+                  echo "  → HTML wird gebaut..."
+                  if asciidoctor \
+                      $COMMON_ARGS \
+                      -b html5 \
+                      -o "${OUT_DIR}/${BASE}.html" \
+                      "$adoc_file" 2>&1; then
+                    SIZE=$(du -sh "${OUT_DIR}/${BASE}.html" \
+                           | cut -f1)
+                    echo "  ✅ HTML: ${OUT_DIR}/${BASE}.html ($SIZE)"
+                  else
+                    echo "  ❌ HTML Build fehlgeschlagen!"
+                    BUILD_OK=false
+                  fi
+                fi
+
+                # ── PDF bauen ──────────────────────────
+                if echo "$FORMATS" | grep -q "pdf"; then
+                  echo "  → PDF wird gebaut..."
+                  if asciidoctor-pdf \
+                      $COMMON_ARGS \
+                      -a pdf-fontsdir=GEM_FONTS_DIR \
+                      -o "${OUT_DIR}/${BASE}.pdf" \
+                      "$adoc_file" 2>&1; then
+                    SIZE=$(du -sh "${OUT_DIR}/${BASE}.pdf" \
+                           | cut -f1)
+                    echo "  ✅ PDF:  ${OUT_DIR}/${BASE}.pdf ($SIZE)"
+                  else
+                    echo "  ❌ PDF Build fehlgeschlagen!"
+                    BUILD_OK=false
+                  fi
+                fi
+
+                if [ "$BUILD_OK" = "false" ]; then
+                  echo "  ⚠️ Build teilweise fehlgeschlagen: $adoc_file"
+                fi
+              else
+                echo "⏭  Übersprungen (kein .buildadoc): $adoc_file"
+              fi
+          done
+
+      # ── Ergebnis prüfen ───────────────────────
+      - |
+        echo ""
+        echo "════════════════════════════════════════"
+        echo "  Generierte Dokumentation:"
+        echo "════════════════════════════════════════"
+        find /workspace/docs \
+          \( -name "*.html" -o -name "*.pdf" \) \
+          -not -path "*/.cache/*" \
+          | sort \
+          | while read -r f; do
+              SIZE=$(du -sh "$f" | cut -f1)
+              echo "  📄 $(realpath --relative-to=/workspace/docs $f) ($SIZE)"
+            done
+        echo "════════════════════════════════════════"
+        TOTAL=$(find /workspace/docs \
+          \( -name "*.html" -o -name "*.pdf" \) \
+          -not -path "*/.cache/*" | wc -l)
+        echo "  Gesamt: $TOTAL Dateien gebaut"
+
+  # ════════════════════════════════════════
+  # SCHRITT 8 — Quality Gates prüfen
+  # ════════════════════════════════════════
+  - name: check-quality-gates
+    image: python:3.12-alpine
+    depends_on: [generate-reports]
+    volumes:
+      - name: report-workspace
+        path: /workspace
+    commands:
+      - python3 << 'PYEOF'
+import json, sys
+
+with open("/workspace/merged_requirements.json") as f:
+    data = json.load(f)
+
+tests    = data["test_ergebnisse"]
+all_reqs = [r for k in data["kategorien"]
+              for r in k["requirements"]]
+
+total    = len(tests)
+best     = sum(1 for t in tests if t["status"] == "BESTANDEN")
+fehlg    = sum(1 for t in tests if t["status"] == "FEHLGESCHLAGEN")
+erfolg   = round(best / total * 100, 1) if total else 0
+avg_cov  = sum(r["abdeckung"] for r in all_reqs) / len(all_reqs)
+min_cov  = min(r["abdeckung"] for r in all_reqs)
+impl_pct = sum(1 for r in all_reqs
+               if r["status"] == "IMPLEMENTIERT") / len(all_reqs) * 100
+
+print("╔══════════════════════════════════════╗")
+print("║        Quality Gate Prüfung          ║")
+print("╠══════════════════════════════════════╣")
+print(f"║  Tests gesamt:     {total:4d}              ║")
+print(f"║  Bestanden:        {best:4d} ({erfolg:5.1f}%)     ║")
+print(f"║  Fehlgeschlagen:   {fehlg:4d}              ║")
+print(f"║  Ø Code Coverage:  {avg_cov:5.1f}%           ║")
+print(f"║  Min Coverage:     {min_cov:5.1f}%           ║")
+print(f"║  Req. impl.:       {impl_pct:5.1f}%           ║")
+print("╠══════════════════════════════════════╣")
+
+gates = [
+    ("Erfolgsrate",  erfolg,  90.0),
+    ("Ø Coverage",   avg_cov, 75.0),
+    ("Min Coverage", min_cov, 50.0),
+    ("Req. Impl.",   impl_pct,80.0),
+]
+failed = []
+for name, val, thresh in gates:
+    ok = val >= thresh
+    print(f"║  {'✅' if ok else '❌'} {name:<14} "
+          f"{val:5.1f}% >= {thresh:4.1f}%    ║")
+    if not ok:
+        failed.append(f"{name}: {val:.1f}% < {thresh:.1f}%")
+print("╚══════════════════════════════════════╝")
+if failed:
+    for f in failed: print(f"❌ {f}")
+    sys.exit(1)
+print("✅ Alle Quality Gates bestanden!")
+PYEOF
+
+  # ════════════════════════════════════════
+  # SCHRITT 9 — Test Trend speichern
+  # ════════════════════════════════════════
+  - name: save-trend
+    image: python:3.12-alpine
+    depends_on: [check-quality-gates]
+    volumes:
+      - name: report-workspace
+        path: /workspace
+      - name: trend-storage
+        path: /trend
+    commands:
+      - python3 << 'PYEOF'
+import json, os
+from datetime import datetime
+
+with open("/workspace/merged_requirements.json") as f:
+    data = json.load(f)
+with open("/workspace/build_meta.json") as f:
+    meta = json.load(f)
+
+tests    = data["test_ergebnisse"]
+all_reqs = [r for k in data["kategorien"]
+              for r in k["requirements"]]
+total    = len(tests)
+best     = sum(1 for t in tests if t["status"] == "BESTANDEN")
+avg_cov  = sum(r["abdeckung"] for r in all_reqs) / len(all_reqs)
+
+entry = {
+    "timestamp":    meta["timestamp"],
+    "build":        meta["build_number"],
+    "branch":       meta["branch"],
+    "commit":       meta["commit"],
+    "total_tests":  total,
+    "bestanden":    best,
+    "fehlgeschlagen": sum(1 for t in tests
+                          if t["status"] == "FEHLGESCHLAGEN"),
+    "erfolgsrate":  round(best/total*100, 1) if total else 0,
+    "avg_coverage": round(avg_cov, 1),
+}
+trend_file = "/trend/test_trend.json"
+trend = []
+if os.path.exists(trend_file):
+    with open(trend_file) as f:
+        trend = json.load(f)
+trend.append(entry)
+trend = trend[-100:]
+with open(trend_file, "w") as f:
+    json.dump(trend, f, indent=2)
+print(f"✅ Trend: Build #{entry['build']} | "
+      f"{entry['erfolgsrate']}% | "
+      f"Cov: {entry['avg_coverage']}%")
+PYEOF
+
+  # ════════════════════════════════════════
+  # SCHRITT 10 — Alle Artefakte packen
+  # Reports + Architektur + Docs
+  # ════════════════════════════════════════
+  - name: package-artifacts
+    image: alpine
+    depends_on:
+      - generate-reports
+      - generate-architecture
+      - build-docs
+      - save-trend
+    volumes:
+      - name: report-workspace
+        path: /workspace
+      - name: artifact-storage
+        path: /artifacts
+    commands:
+      - apk add --no-cache zip
+      - OUTDIR=/artifacts/${DRONE_BUILD_NUMBER}
+      - mkdir -p ${OUTDIR}
+
+      # Reports
+      - cp /workspace/reports/*.html ${OUTDIR}/ 2>/dev/null || true
+      - cp /workspace/reports/*.pdf  ${OUTDIR}/ 2>/dev/null || true
+      - cp /workspace/reports/*.md   ${OUTDIR}/ 2>/dev/null || true
+      - cp /workspace/reports/*.json ${OUTDIR}/ 2>/dev/null || true
+
+      # Architektur
+      - cp /workspace/arch/*.html    ${OUTDIR}/ 2>/dev/null || true
+      - cp /workspace/arch/*.pdf     ${OUTDIR}/ 2>/dev/null || true
+
+      # AsciiDoc Dokumentation (Struktur beibehalten)
+      - |
+        if [ -d /workspace/docs ] && \
+           [ "$(find /workspace/docs \
+                \( -name '*.html' -o -name '*.pdf' \) \
+                -not -path '*/.cache/*' \
+                | wc -l)" -gt 0 ]; then
+          mkdir -p ${OUTDIR}/docs
+          cp -r /workspace/docs/. ${OUTDIR}/docs/ \
+            2>/dev/null || true
+          # Cache nicht mitkopieren
+          find ${OUTDIR}/docs -name ".cache" -type d \
+            -exec rm -rf {} + 2>/dev/null || true
+          echo "✅ Docs kopiert"
+        fi
+
+      # Gesamt ZIP
+      - cd ${OUTDIR}
+      - zip -r /artifacts/build-${DRONE_BUILD_NUMBER}-all.zip .
+      - cd /workspace/docs 2>/dev/null && \
+          zip -r /artifacts/build-${DRONE_BUILD_NUMBER}-docs.zip \
+          . --exclude "*/.cache/*" 2>/dev/null || true
+
+      - echo "═══════════════════════════════════"
+      - echo "  Artefakte Build ${DRONE_BUILD_NUMBER}:"
+      - echo "═══════════════════════════════════"
+      - find ${OUTDIR} -type f \
+          -not -path "*/.cache/*" \
+          | sort \
+          | while read f; do
+              SIZE=$(du -sh "$f" | cut -f1)
+              echo "  $(basename $f) ($SIZE)"
+            done
+      - echo "═══════════════════════════════════"
+      - echo "  ZIP gesamt:" \
+          $(du -sh /artifacts/build-${DRONE_BUILD_NUMBER}-all.zip \
+            | cut -f1)
+
+  # ════════════════════════════════════════
+  # SCHRITT 11 — Gitea Wiki aktualisieren
+  # ════════════════════════════════════════
+  - name: publish-wiki
+    image: alpine
+    depends_on: [package-artifacts]
+    volumes:
+      - name: report-workspace
+        path: /workspace
+    environment:
+      GITEA_TOKEN:
+        from_secret: gitea_token
+      GITEA_URL:
+        from_secret: gitea_url
+      GITEA_REPO:
+        from_secret: gitea_repo
+    commands:
+      - apk add --no-cache curl jq
+      # Test Report ins Wiki
+      - |
+        if [ -f /workspace/reports/bb_report.md ]; then
+          CONTENT=$(cat /workspace/reports/bb_report.md \
+            | jq -Rs .)
+          curl -sf -X POST \
+            "${GITEA_URL}/api/v1/repos/${GITEA_REPO}/wiki/pages"\
+            -H "Authorization: token ${GITEA_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"title\": \"Test Report Build ${DRONE_BUILD_NUMBER}\",
+              \"content_format\": \"markdown\",
+              \"content\": ${CONTENT}
+            }" && echo "✅ Test Report Wiki OK" \
+                 || echo "⚠️  Wiki Upload fehlgeschlagen"
+        fi
+      # Architektur Doku ins Wiki (als Markdown)
+      - |
+        find /workspace/docs -name "*.html" \
+          -not -path "*/.cache/*" \
+          | while read html_file; do
+              DOC_NAME=$(basename "$html_file" .html)
+              echo "📄 Wiki: $DOC_NAME"
+            done
+    when:
+      branch: [main]
+      event:  [push]
+
+  # ════════════════════════════════════════
+  # SCHRITT 12 — Gitea Release (nur bei Tag)
+  # ════════════════════════════════════════
+  - name: release-artifacts
+    image: plugins/gitea-release
+    depends_on: [package-artifacts]
+    settings:
+      api_key:
+        from_secret: gitea_token
+      base_url:
+        from_secret: gitea_url
+      files:
+        # Reports
+        - /workspace/reports/bb_dashboard.html
+        - /workspace/reports/bb_report.pdf
+        - /workspace/reports/bb_report.md
+        - /workspace/reports/bb_report.json
+        # Architektur
+        - /workspace/arch/sw_architektur.html
+        - /workspace/arch/sw_architektur.pdf
+        # Docs ZIP
+        - /artifacts/build-${DRONE_BUILD_NUMBER}-docs.zip
+        # Alles ZIP
+        - /artifacts/build-${DRONE_BUILD_NUMBER}-all.zip
+      checksum:
+        - sha256
+    when:
+      event: [tag]
+
+  # ════════════════════════════════════════
+  # SCHRITT 13 — Slack Benachrichtigung
+  # ════════════════════════════════════════
+  - name: notify
+    image: plugins/slack
+    depends_on:
+      - check-quality-gates
+      - build-docs
+      - package-artifacts
+    settings:
+      webhook:
+        from_secret: slack_webhook
+      channel: builds
+      template: |
+        *{{ repo.name }}* Build {{build.number}} {{#success build.status}}✅ OK{{else}}❌ FEHLER{{/success}}
+        Branch: `{{build.branch}}` | Commit: `{{truncate build.commit 8}}`
+        📊 Reports: HTML · PDF · Markdown · JSON
+        🏗  Architektur: HTML · PDF
+        📚 Docs: AsciiDoc → HTML + PDF
+        {{build.link}}
+    when:
+      status: [success, failure]
+      branch: [main]
+      event:  [push, tag]
+
+# ════════════════════════════════════════
+# Volumes
+# ════════════════════════════════════════
+volumes:
+  - name: report-workspace
+    temp: {}
+  - name: go-cache
+    host:
+      path: /tmp/drone-cache/go
+  - name: trend-storage
+    host:
+      path: /var/drone/trend-data
+  - name: artifact-storage
+    host:
+      path: /var/drone/artifacts
+  - name: plantuml-cache
+    host:
+      path: /tmp/drone-plantuml-cache

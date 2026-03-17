@@ -1,0 +1,54 @@
+---
+name: ✨ Feature Request
+description: Neues Feature vorschlagen
+title: "[Feature]: "
+labels: ["enhancement"]
+
+body:
+  - type: dropdown
+    id: component
+    attributes:
+      label: Komponente
+      options:
+        - C Library
+        - Rust Library
+        - Go REST API
+        - HAL Wrapper
+        - CLI (bbcli)
+        - TUI (bbtui)
+        - Desktop GUI
+        - Web GUI
+        - CI/CD
+        - Neu
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / Motivation
+      description: Welches Problem soll gelöst werden?
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Vorgeschlagene Lösung
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativen
+      description: Andere Lösungsansätze?
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checkliste
+      options:
+        - label: Dieses Feature existiert noch nicht
+          required: true
+        - label: Ich bin bereit einen PR zu erstellen

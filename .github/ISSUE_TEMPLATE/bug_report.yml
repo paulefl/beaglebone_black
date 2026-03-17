@@ -1,0 +1,102 @@
+---
+name: 🐛 Bug Report
+description: Einen Fehler melden
+title: "[Bug]: "
+labels: ["bug", "triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Danke für deinen Bug Report! Bitte fülle alle Felder aus.
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Welche Version ist betroffen?
+      placeholder: "z.B. v1.0.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Komponente
+      options:
+        - C Library (libhardware)
+        - Rust Library (libhardware_rs)
+        - Go REST API
+        - HAL Wrapper
+        - CLI (bbcli)
+        - TUI (bbtui)
+        - Desktop GUI (bbgui)
+        - Web GUI
+        - CI/CD Pipeline
+        - Dokumentation
+    validations:
+      required: true
+
+  - type: dropdown
+    id: backend
+    attributes:
+      label: HAL Backend
+      options:
+        - C
+        - Rust
+        - Auto
+        - Nicht relevant
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Fehlerbeschreibung
+      description: Was ist passiert?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduzierbarkeit
+      description: Schritte zum Reproduzieren
+      value: |
+        1. ...
+        2. ...
+        3. Fehler tritt auf
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Erwartetes Verhalten
+      description: Was sollte passieren?
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Fehlermeldungen
+      description: Relevante Logs einfügen
+      render: shell
+
+  - type: input
+    id: hardware
+    attributes:
+      label: Hardware
+      placeholder: "z.B. BeagleBone Black Rev C, Debian 11"
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checkliste
+      options:
+        - label: Ich habe die bestehenden Issues überprüft
+          required: true
+        - label: Ich habe die Dokumentation gelesen
+          required: true

@@ -1,0 +1,76 @@
+@startuml 06_hal_fallback
+!theme plain
+skinparam backgroundColor #060a10
+skinparam defaultFontColor #94a3b8
+skinparam defaultFontName "JetBrains Mono"
+skinparam defaultFontSize 10
+skinparam ArrowColor #475569
+
+skinparam activity {
+  BackgroundColor #111c2a
+  BorderColor #1e3048
+  FontColor #e2e8f0
+  DiamondBackgroundColor #1e293b
+  DiamondBorderColor #fb923c
+  DiamondFontColor #e2e8f0
+  StartColor #3b82f6
+  EndColor #22c55e
+}
+skinparam ArrowColor #64748b
+
+title <color:#fb923c><b>HAL Auto-Fallback Aktivitätsdiagramm</b></color>
+
+start
+
+:Konfiguration laden\n<color:#64748b>cfg.Backend = "auto"</color>;
+
+:C Driver initialisieren\n<color:#fbbf24>cdriver.New(cfg).Init()</color>;
+
+if (C Init erfolgreich?) then (ja)
+  :Rust Driver als Backup\n<color:#fb923c>rustdriver.New(cfg).Init()</color>;
+
+  :AutoDriver erstellen\n<color:#4ade80>primary=C, secondary=Rust</color>;
+
+  note right
+    <color:#4ade80>Log: "C (primär) + Rust (Backup)"</color>
+  end note
+
+  :Hardware-Aufruf\nz.B. BME280Read();
+
+  if (C Aufruf erfolgreich?) then (ja)
+    :<color:#22c55e>C Ergebnis zurückgeben\nbackend: "c"</color>;
+  else (nein)
+    :Rust Fallback\n<color:#fb923c>secondary.BME280Read()</color>;
+    note right
+      <color:#f59e0b>Log: "C fehlgeschlagen → Rust Fallback"</color>
+    end note
+    if (Rust erfolgreich?) then (ja)
+      :<color:#fb923c>Rust Ergebnis zurückgeben\nbackend: "rust"</color>;
+    else (nein)
+      :<color:#ef4444>Fehler: beide Backends fehlgeschlagen</color>;
+    endif
+  endif
+
+else (nein)
+  :C fehlgeschlagen\nLog Warnung;
+  note right
+    <color:#f59e0b>Log: "C Driver fehlgeschlagen → Rust"</color>
+  end note
+
+  :Rust Driver initialisieren\n<color:#fb923c>rustdriver.New(cfg).Init()</color>;
+
+  if (Rust Init erfolgreich?) then (ja)
+    :Nur Rust Driver\n<color:#fb923c>primary=Rust</color>;
+    note right
+      <color:#fb923c>Log: "Rust (Fallback)"</color>
+    end note
+    :<color:#fb923c>Rust Ergebnis zurückgeben</color>;
+  else (nein)
+    :<color:#ef4444>FATAL: Beide Backends fehlgeschlagen</color>;
+    stop
+  endif
+endif
+
+stop
+
+@enduml

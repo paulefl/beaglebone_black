@@ -1,0 +1,56 @@
+@startuml 04_api_layer
+!theme plain
+skinparam backgroundColor #060a10
+skinparam defaultFontColor #94a3b8
+skinparam defaultFontName "JetBrains Mono"
+skinparam defaultFontSize 10
+skinparam ArrowColor #475569
+skinparam componentStyle rectangle
+
+skinparam component {
+  BackgroundColor #0d1520
+  BorderColor #064e3b
+  FontColor #e2e8f0
+  RoundCorner 6
+}
+
+title <color:#4ade80><b>API Layer — Go REST Server :5000</b></color>
+
+package "Go REST API" #022c22 {
+
+  component "Router\n<color:#64748b>gorilla/mux\nMiddleware\nCORS</color>" as RT
+
+  component "BME280 Handler\n<color:#64748b>GET /api/v1/bme280\nGET /bme280/c\nGET /bme280/rust\nGET /bme280/stream</color>" as HB #052e16
+
+  component "GPIO Handler\n<color:#64748b>GET /api/v1/gpio\nGET /gpio/{pin}\nPOST /gpio/{pin}</color>" as HG #052e16
+
+  component "UART Handler\n<color:#64748b>POST /uart/config\nPOST /uart/send\nGET /uart/receive</color>" as HU #052e16
+
+  component "SPI Handler\n<color:#64748b>POST /spi/config\nPOST /spi/transfer</color>" as HS #052e16
+
+  component "Backend Handler\n<color:#64748b>POST /api/v1/backend\nc | rust | auto</color>" as HBK #052e16
+
+  component "Health Handler\n<color:#64748b>GET /health\nstatus · driver</color>" as HH #052e16
+
+  component "SSE Manager\n<color:#64748b>Event Streams\n2s Intervall</color>" as SSE #052e16
+}
+
+RT --> HB
+RT --> HG
+RT --> HU
+RT --> HS
+RT --> HBK
+RT --> HH
+HB --> SSE : <color:#475569>stream
+
+package "HAL Interface" #431407 {
+  component "HardwareDriver\n<color:#64748b>Go Interface</color>" as HAL
+}
+
+HB  --> HAL : <color:#475569>BME280Read()
+HG  --> HAL : <color:#475569>GPIORead/Write()
+HU  --> HAL : <color:#475569>UARTRead/Write()
+HS  --> HAL : <color:#475569>SPITransfer()
+HBK --> HAL : <color:#475569>SetBackend()
+
+@enduml

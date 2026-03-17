@@ -1,0 +1,12 @@
+# .buildadoc — Marker-Datei
+# Dieses File triggert den automatischen AsciiDoc Build
+# für alle *.adoc Dateien im selben Verzeichnis.
+#
+# Optionale Konfiguration:
+formats: html,pdf
+theme: dark
+plantuml: true
+toc: left
+numbered: true
+lang: de
+author: Embedded SW Team

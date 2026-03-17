@@ -1,0 +1,116 @@
+@startuml 05_hal_layer
+!theme plain
+skinparam backgroundColor #060a10
+skinparam defaultFontColor #94a3b8
+skinparam defaultFontName "JetBrains Mono"
+skinparam defaultFontSize 10
+skinparam ArrowColor #475569
+skinparam classStyle rectangle
+
+skinparam class {
+  BackgroundColor #111c2a
+  BorderColor #fb923c
+  FontColor #e2e8f0
+  HeaderBackgroundColor #431407
+  HeaderFontColor #fb923c
+}
+
+title <color:#fb923c><b>HAL Layer — Hardware Abstraction</b></color>
+
+interface "HardwareDriver\n<color:#64748b>Go Interface</color>" as IFACE {
+  + Name() string
+  + Backend() Backend
+  ..BME280..
+  + BME280Read() (*BME280Data, error)
+  ..GPIO..
+  + GPIOExport(pin uint32) error
+  + GPIOSetDirection(pin uint32, out bool) error
+  + GPIORead(pin uint32) (*GPIOData, error)
+  + GPIOWrite(pin uint32, value int) error
+  ..UART..
+  + UARTOpen(port string, baud uint32) error
+  + UARTWrite(data []byte) (int, error)
+  + UARTRead(ms int) (*UARTData, error)
+  + UARTClose()
+  ..SPI..
+  + SPITransfer(dev string, speed uint32, tx []byte) (*SPIData, error)
+  ..Lifecycle..
+  + Init() error
+  + Close()
+}
+
+class "CDriver\n<color:#fbbf24>C Backend</color>" as CD {
+  - bme280 C.bme280_dev_t
+  - uart   C.uart_dev_t
+  - config *Config
+  --
+  + Name()    string
+  + Backend() Backend
+  ..via CGO..
+  + BME280Read() (*BME280Data, error)
+  + GPIORead(pin uint32) (*GPIOData, error)
+}
+
+class "RustDriver\n<color:#fb923c>Rust Backend</color>" as RD {
+  - uart   C.RsUartHandle
+  - config *Config
+  --
+  + Name()    string
+  + Backend() Backend
+  ..via FFI..
+  + BME280Read() (*BME280Data, error)
+  + GPIORead(pin uint32) (*GPIOData, error)
+}
+
+class "AutoDriver\n<color:#4ade80>C → Rust Fallback</color>" as AD {
+  - primary   HardwareDriver
+  - secondary HardwareDriver
+  - cfg       *Config
+  --
+  + BME280Read() (*BME280Data, error)
+  + GPIORead(pin uint32) (*GPIOData, error)
+  ..Fallback Logik..
+  - try(primary, secondary func() error) error
+}
+
+class "MockDriver\n<color:#94a3b8>Unit Tests</color>" as MD {
+  - gpioValues  map[uint32]int
+  - uartBuffer  []byte
+  - Calls       []string
+  --
+  + BME280Error  error
+  + GPIOError    error
+  ..Test Helpers..
+  + WasCalled(method string) bool
+  + CallCount(method string) int
+  + Reset()
+}
+
+class "Factory\n<color:#38bdf8>NewDriver()</color>" as FAC {
+  + NewDriver(cfg *Config) HardwareDriver
+}
+
+IFACE <|.. CD   : implements
+IFACE <|.. RD   : implements
+IFACE <|.. AD   : implements
+IFACE <|.. MD   : implements
+FAC   ..> CD    : creates
+FAC   ..> RD    : creates
+FAC   ..> AD    : creates
+AD    o--> CD   : primary
+AD    o--> RD   : secondary
+
+note bottom of AD
+  <color:#4ade80>Automatischer Fallback:
+  1. Versuche C (primär)
+  2. Bei Fehler → Rust
+  3. Beide failed → Error</color>
+end note
+
+note bottom of MD
+  <color:#94a3b8>Fehler-Injektion:
+  driver.BME280Error = errors.New("test")
+  driver.GPIOError   = errors.New("test")</color>
+end note
+
+@enduml

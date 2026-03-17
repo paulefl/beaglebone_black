@@ -1,0 +1,448 @@
+{
+  "projekt": "BeagleBone Black Embedded SW",
+  "version": "1.0.0",
+  "datum": "2026-03-17",
+  "kategorien": [
+    {
+      "id": "EMB",
+      "name": "Embedded SW (Go/C/Rust)",
+      "farbe": "#3b82f6",
+      "requirements": [
+        {
+          "id": "EMB-001",
+          "titel": "Hardware Initialisierung",
+          "beschreibung": "Das System muss alle Hardware-Komponenten (BME280, GPIO, UART, SPI) beim Start erfolgreich initialisieren.",
+          "prioritaet": "HOCH",
+          "status": "IMPLEMENTIERT",
+          "tests": ["test_bme280_init", "test_gpio_export", "test_uart_open", "test_spi_open"],
+          "abdeckung": 95
+        },
+        {
+          "id": "EMB-002",
+          "titel": "BME280 Messung",
+          "beschreibung": "Das System muss Temperatur (-40 bis +85°C), Luftfeuchtigkeit (0-100%) und Luftdruck (300-1100 hPa) vom BME280 messen.",
+          "prioritaet": "HOCH",
+          "status": "IMPLEMENTIERT",
+          "tests": ["test_bme280_read", "test_temperatur_plausibel", "test_luftfeuchte_plausibel", "test_luftdruck_plausibel"],
+          "abdeckung": 98
+        },
+        {
+          "id": "EMB-003",
+          "titel": "GPIO Steuerung",
+          "beschreibung": "Das System muss GPIO Pins als Ein- und Ausgang konfigurieren sowie digitale Werte lesen und schreiben können.",
+          "prioritaet": "HOCH",
+          "status": "IMPLEMENTIERT",
+          "tests": ["test_gpio_write", "test_gpio_read", "test_gpio_direction", "test_gpio_mehrere_pins"],
+          "abdeckung": 92
+        },
+        {
+          "id": "EMB-004",
+          "titel": "UART Kommunikation",
+          "beschreibung": "Das System muss serielle Kommunikation über UART mit konfigurierbarer Baudrate (9600-115200) unterstützen.",
+          "prioritaet": "MITTEL",
+          "status": "IMPLEMENTIERT",
+          "tests": ["test_uart_open", "test_uart_write", "test_uart_read", "test_uart_baudrate"],
+          "abdeckung": 88
+        },
+        {
+          "id": "EMB-005",
+          "titel": "SPI Transfer",
+          "beschreibung": "Das System muss SPI Transfers mit konfigurierbarer Geschwindigkeit (bis 48 MHz) und Mode (0-3) durchführen.",
+          "prioritaet": "MITTEL",
+          "status": "IMPLEMENTIERT",
+          "tests": ["test_spi_transfer", "test_spi_loopback", "test_spi_mode"],
+          "abdeckung": 85
+        },
+        {
+          "id": "EMB-006",
+          "titel": "ARMv7 Cross-Kompilierung",
+          "beschreibung": "Die Software muss für ARMv7 (Cortex-A8) cross-kompiliert werden und auf dem BeagleBone Black ausführbar sein.",
+          "prioritaet": "HOCH",
+          "status": "IMPLEMENTIERT",
+          "tests": ["test_simulation_armv7", "test_deploy_beaglebone"],
+          "abdeckung": 90
+        },
+        {
+          "id": "EMB-007",
+          "titel": "Höhenberechnung",
+          "beschreibung": "Das System muss die Höhe aus dem Luftdruck berechnen (Formel: 44330 * (1 - (p/p0)^(1/5.255))).",
+          "prioritaet": "NIEDRIG",
+          "status": "IMPLEMENTIERT",
+          "tests": ["test_hoehe_plausibel", "test_hoehe_berechnung"],
+          "abdeckung": 100
+        }
+      ]
+    },
+    {
+      "id": "HAL",
+      "name": "HAL Wrapper",
+      "farbe": "#8b5cf6",
+      "requirements": [
+        {
+          "id": "HAL-001",
+          "titel": "C Library Integration",
+          "beschreibung": "Der HAL muss die C Hardware Library via CGO einbinden und alle Hardware-Funktionen bereitstellen.",
+          "prioritaet": "HOCH",
+          "status": "IMPLEMENTIERT",
+          "tests": ["test_hal_c_init", "test_hal_c_bme280", "test_hal_c_gpio"],
+          "abdeckung": 93
+        },
+        {
+          "id": "HAL-002",
+          "titel": "Rust Library Integration",
+          "beschreibung": "Der HAL muss die Rust Hardware Library via FFI einbinden und alle Hardware-Funktionen bereitstellen.",
+          "prioritaet": "HOCH",
+          "status": "IMPLEMENTIERT",
+          "tests": ["test_hal_rust_init", "test_hal_rust_bme280", "test_hal_rust_gpio"],
+          "abdeckung": 91
+        },
+        {
+          "id": "HAL-003",
+          "titel": "Backend Laufzeitauswahl",
+          "beschreibung": "Der HAL muss zur Laufzeit zwischen C und Rust Backend wechselbar sein (via Flag oder Umgebungsvariable).",
+          "prioritaet": "HOCH",
+          "status": "IMPLEMENTIERT",
+          "tests": ["test_backend_wechsel", "test_backend_c_zu_rust", "test_backend_env_var"],
+          "abdeckung": 96
+        },
+        {
+          "id": "HAL-004",
+          "titel": "Automatischer Fallback",
+          "beschreibung": "Der HAL muss bei Fehler des primären Backends automatisch auf das sekundäre Backend wechseln.",
+          "prioritaet": "HOCH",
+          "status": "IMPLEMENTIERT",
+          "tests": ["test_fallback_primaer_fehler", "test_fallback_beide_fehlen", "test_fallback_auto"],
+          "abdeckung": 97
+        },
+        {
+          "id": "HAL-005",
+          "titel": "Mock Driver für Tests",
+          "beschreibung": "Der HAL muss einen Mock Driver bereitstellen, der Hardware ohne physischen Zugriff simuliert.",
+          "prioritaet": "MITTEL",
+          "status": "IMPLEMENTIERT",
+          "tests": ["test_mock_init", "test_mock_bme280", "test_mock_fehler_injektion", "test_mock_call_tracking"],
+          "abdeckung": 100
+        },
+        {
+          "id": "HAL-006",
+          "titel": "Thread-Sicherheit",
+          "beschreibung": "Der HAL muss thread-sicher sein und gleichzeitige Zugriffe ohne Race Conditions unterstützen.",
+          "prioritaet": "MITTEL",
+          "status": "IMPLEMENTIERT",
+          "tests": ["test_hal_race_condition", "test_concurrent_gpio", "test_concurrent_bme280"],
+          "abdeckung": 88
+        },
+        {
+          "id": "HAL-007",
+          "titel": "Fehlerbehandlung",
+          "beschreibung": "Der HAL muss alle Hardware-Fehler abfangen und strukturierte Fehlermeldungen zurückgeben.",
+          "prioritaet": "HOCH",
+          "status": "IMPLEMENTIERT",
+          "tests": ["test_hal_i2c_fehler", "test_hal_gpio_fehler", "test_hal_uart_fehler"],
+          "abdeckung": 94
+        }
+      ]
+    },
+    {
+      "id": "API",
+      "name": "REST API",
+      "farbe": "#10b981",
+      "requirements": [
+        {
+          "id": "API-001",
+          "titel": "BME280 Endpoint",
+          "beschreibung": "Die API muss GET /api/v1/bme280 bereitstellen und Temperatur, Luftfeuchtigkeit, Druck und Höhe als JSON zurückgeben.",
+          "prioritaet": "HOCH",
+          "status": "IMPLEMENTIERT",
+          "tests": ["test_bme280_endpoint", "test_bme280_json_struktur", "test_bme280_backend_angabe"],
+          "abdeckung": 98
+        },
+        {
+          "id": "API-002",
+          "titel": "GPIO Endpoints",
+          "beschreibung": "Die API muss GET/POST /api/v1/gpio/{pin} bereitstellen zum Lesen und Setzen von GPIO Pins.",
+          "prioritaet": "HOCH",
+          "status": "IMPLEMENTIERT",
+          "tests": ["test_gpio_get", "test_gpio_post", "test_gpio_invalid_pin"],
+          "abdeckung": 95
+        },
+        {
+          "id": "API-003",
+          "titel": "UART Endpoints",
+          "beschreibung": "Die API muss /api/v1/uart/send und /api/v1/uart/receive bereitstellen.",
+          "prioritaet": "MITTEL",
+          "status": "IMPLEMENTIERT",
+          "tests": ["test_uart_send", "test_uart_receive", "test_uart_config"],
+          "abdeckung": 87
+        },
+        {
+          "id": "API-004",
+          "titel": "SPI Endpoint",
+          "beschreibung": "Die API muss POST /api/v1/spi/transfer bereitstellen für SPI Datentransfer.",
+          "prioritaet": "MITTEL",
+          "status": "IMPLEMENTIERT",
+          "tests": ["test_spi_transfer_endpoint", "test_spi_response_format"],
+          "abdeckung": 83
+        },
+        {
+          "id": "API-005",
+          "titel": "Backend Endpoint",
+          "beschreibung": "Die API muss POST /api/v1/backend bereitstellen zum Wechsel des HAL Backends zur Laufzeit.",
+          "prioritaet": "HOCH",
+          "status": "IMPLEMENTIERT",
+          "tests": ["test_backend_endpoint", "test_backend_wechsel_api", "test_backend_invalid"],
+          "abdeckung": 96
+        },
+        {
+          "id": "API-006",
+          "titel": "Health Endpoint",
+          "beschreibung": "Die API muss GET /health bereitstellen mit Status, Backend und Driver Information.",
+          "prioritaet": "HOCH",
+          "status": "IMPLEMENTIERT",
+          "tests": ["test_health_endpoint", "test_health_felder"],
+          "abdeckung": 100
+        },
+        {
+          "id": "API-007",
+          "titel": "SSE Stream",
+          "beschreibung": "Die API muss Server-Sent Events für BME280 und ADC Echtzeit-Streaming bereitstellen.",
+          "prioritaet": "MITTEL",
+          "status": "IMPLEMENTIERT",
+          "tests": ["test_sse_bme280", "test_sse_verbindung", "test_sse_format"],
+          "abdeckung": 79
+        },
+        {
+          "id": "API-008",
+          "titel": "CORS Support",
+          "beschreibung": "Die API muss CORS Headers setzen für Zugriff aus dem Browser.",
+          "prioritaet": "MITTEL",
+          "status": "OFFEN",
+          "tests": [],
+          "abdeckung": 0
+        }
+      ]
+    },
+    {
+      "id": "CLI",
+      "name": "CLI Tools",
+      "farbe": "#f59e0b",
+      "requirements": [
+        {
+          "id": "CLI-001",
+          "titel": "Cobra Framework",
+          "beschreibung": "Das CLI muss auf dem Cobra Framework basieren mit hierarchischen Unterbefehlen.",
+          "prioritaet": "HOCH",
+          "status": "IMPLEMENTIERT",
+          "tests": ["test_cli_help", "test_cli_version", "test_cli_befehle"],
+          "abdeckung": 92
+        },
+        {
+          "id": "CLI-002",
+          "titel": "BME280 Befehle",
+          "beschreibung": "Das CLI muss bme280 read, bme280 stream und bme280 config Befehle bereitstellen.",
+          "prioritaet": "HOCH",
+          "status": "IMPLEMENTIERT",
+          "tests": ["test_bme280_read_cmd", "test_bme280_config_cmd"],
+          "abdeckung": 90
+        },
+        {
+          "id": "CLI-003",
+          "titel": "GPIO Befehle",
+          "beschreibung": "Das CLI muss gpio read, gpio write, gpio config und gpio all Befehle bereitstellen.",
+          "prioritaet": "HOCH",
+          "status": "IMPLEMENTIERT",
+          "tests": ["test_gpio_read_cmd", "test_gpio_write_cmd", "test_gpio_config_cmd"],
+          "abdeckung": 88
+        },
+        {
+          "id": "CLI-004",
+          "titel": "UART Befehle",
+          "beschreibung": "Das CLI muss uart config, uart send und uart receive Befehle bereitstellen.",
+          "prioritaet": "MITTEL",
+          "status": "IMPLEMENTIERT",
+          "tests": ["test_uart_send_cmd", "test_uart_receive_cmd"],
+          "abdeckung": 85
+        },
+        {
+          "id": "CLI-005",
+          "titel": "Shell Completion",
+          "beschreibung": "Das CLI muss Shell Completion für Bash, Zsh, Fish und PowerShell bereitstellen.",
+          "prioritaet": "MITTEL",
+          "status": "IMPLEMENTIERT",
+          "tests": ["test_completion_bash", "test_completion_zsh", "test_completion_fish"],
+          "abdeckung": 80
+        },
+        {
+          "id": "CLI-006",
+          "titel": "Konfigurationsdatei",
+          "beschreibung": "Das CLI muss ~/.bbcli.yaml laden und alle Parameter konfigurierbar machen.",
+          "prioritaet": "HOCH",
+          "status": "IMPLEMENTIERT",
+          "tests": ["test_config_init", "test_config_laden", "test_config_set", "test_config_profile"],
+          "abdeckung": 94
+        },
+        {
+          "id": "CLI-007",
+          "titel": "Multi-Plattform Build",
+          "beschreibung": "Das CLI muss für Linux (amd64/armv7), macOS und Windows gebaut werden.",
+          "prioritaet": "MITTEL",
+          "status": "IMPLEMENTIERT",
+          "tests": ["test_build_linux_amd64", "test_build_armv7", "test_build_darwin", "test_build_windows"],
+          "abdeckung": 100
+        },
+        {
+          "id": "CLI-008",
+          "titel": "Installationsskript",
+          "beschreibung": "Ein Installationsskript muss alle Tools automatisch herunterladen und einrichten.",
+          "prioritaet": "NIEDRIG",
+          "status": "IMPLEMENTIERT",
+          "tests": ["test_installer_syntax", "test_installer_completion"],
+          "abdeckung": 75
+        }
+      ]
+    },
+    {
+      "id": "GUI",
+      "name": "GUI Tools",
+      "farbe": "#ef4444",
+      "requirements": [
+        {
+          "id": "GUI-001",
+          "titel": "Web GUI",
+          "beschreibung": "Die Web GUI muss alle Hardware-Parameter im Browser konfigurierbar machen mit Live-Updates.",
+          "prioritaet": "HOCH",
+          "status": "IMPLEMENTIERT",
+          "tests": ["test_web_gui_html", "test_web_gui_bme280", "test_web_gui_gpio"],
+          "abdeckung": 78
+        },
+        {
+          "id": "GUI-002",
+          "titel": "Desktop GUI (Fyne)",
+          "beschreibung": "Die Desktop GUI muss mit Fyne implementiert sein und alle Konfigurationsoptionen in Tabs darstellen.",
+          "prioritaet": "MITTEL",
+          "status": "IMPLEMENTIERT",
+          "tests": ["test_desktop_gui_build", "test_desktop_tabs"],
+          "abdeckung": 72
+        },
+        {
+          "id": "GUI-003",
+          "titel": "Terminal TUI (BubbleTea)",
+          "beschreibung": "Die TUI muss mit BubbleTea implementiert sein und Keyboard-Navigation unterstützen.",
+          "prioritaet": "MITTEL",
+          "status": "IMPLEMENTIERT",
+          "tests": ["test_tui_build", "test_tui_navigation"],
+          "abdeckung": 70
+        },
+        {
+          "id": "GUI-004",
+          "titel": "Echtzeit-Updates",
+          "beschreibung": "Alle GUIs müssen BME280 Daten alle 2 Sekunden automatisch aktualisieren.",
+          "prioritaet": "HOCH",
+          "status": "IMPLEMENTIERT",
+          "tests": ["test_gui_refresh", "test_sse_stream_gui"],
+          "abdeckung": 82
+        },
+        {
+          "id": "GUI-005",
+          "titel": "Backend Auswahl",
+          "beschreibung": "Alle GUIs müssen das HAL Backend (C/Rust/Auto) zur Laufzeit umschaltbar machen.",
+          "prioritaet": "HOCH",
+          "status": "IMPLEMENTIERT",
+          "tests": ["test_gui_backend_wechsel", "test_gui_backend_anzeige"],
+          "abdeckung": 85
+        },
+        {
+          "id": "GUI-006",
+          "titel": "Dark Theme",
+          "beschreibung": "Alle GUIs müssen ein Dark Theme als Standard verwenden.",
+          "prioritaet": "NIEDRIG",
+          "status": "IMPLEMENTIERT",
+          "tests": ["test_gui_dark_theme"],
+          "abdeckung": 65
+        },
+        {
+          "id": "GUI-007",
+          "titel": "Responsives Layout",
+          "beschreibung": "Die Web GUI muss auf verschiedenen Bildschirmgrößen funktionieren.",
+          "prioritaet": "NIEDRIG",
+          "status": "OFFEN",
+          "tests": [],
+          "abdeckung": 0
+        }
+      ]
+    }
+  ],
+  "test_ergebnisse": [
+    {"name": "test_bme280_init",          "status": "BESTANDEN", "dauer_ms": 12,  "komponente": "EMB"},
+    {"name": "test_bme280_read",           "status": "BESTANDEN", "dauer_ms": 45,  "komponente": "EMB"},
+    {"name": "test_temperatur_plausibel",  "status": "BESTANDEN", "dauer_ms": 8,   "komponente": "EMB"},
+    {"name": "test_luftfeuchte_plausibel", "status": "BESTANDEN", "dauer_ms": 7,   "komponente": "EMB"},
+    {"name": "test_luftdruck_plausibel",   "status": "BESTANDEN", "dauer_ms": 9,   "komponente": "EMB"},
+    {"name": "test_hoehe_plausibel",       "status": "BESTANDEN", "dauer_ms": 6,   "komponente": "EMB"},
+    {"name": "test_hoehe_berechnung",      "status": "BESTANDEN", "dauer_ms": 5,   "komponente": "EMB"},
+    {"name": "test_gpio_export",           "status": "BESTANDEN", "dauer_ms": 15,  "komponente": "EMB"},
+    {"name": "test_gpio_write",            "status": "BESTANDEN", "dauer_ms": 11,  "komponente": "EMB"},
+    {"name": "test_gpio_read",             "status": "BESTANDEN", "dauer_ms": 10,  "komponente": "EMB"},
+    {"name": "test_gpio_direction",        "status": "BESTANDEN", "dauer_ms": 9,   "komponente": "EMB"},
+    {"name": "test_gpio_mehrere_pins",     "status": "BESTANDEN", "dauer_ms": 22,  "komponente": "EMB"},
+    {"name": "test_uart_open",             "status": "BESTANDEN", "dauer_ms": 18,  "komponente": "EMB"},
+    {"name": "test_uart_write",            "status": "BESTANDEN", "dauer_ms": 14,  "komponente": "EMB"},
+    {"name": "test_uart_read",             "status": "BESTANDEN", "dauer_ms": 120, "komponente": "EMB"},
+    {"name": "test_uart_baudrate",         "status": "BESTANDEN", "dauer_ms": 16,  "komponente": "EMB"},
+    {"name": "test_spi_transfer",          "status": "BESTANDEN", "dauer_ms": 25,  "komponente": "EMB"},
+    {"name": "test_spi_loopback",          "status": "BESTANDEN", "dauer_ms": 19,  "komponente": "EMB"},
+    {"name": "test_spi_mode",              "status": "BESTANDEN", "dauer_ms": 17,  "komponente": "EMB"},
+    {"name": "test_simulation_armv7",      "status": "BESTANDEN", "dauer_ms": 850, "komponente": "EMB"},
+    {"name": "test_deploy_beaglebone",     "status": "BESTANDEN", "dauer_ms": 3200,"komponente": "EMB"},
+    {"name": "test_hal_c_init",            "status": "BESTANDEN", "dauer_ms": 20,  "komponente": "HAL"},
+    {"name": "test_hal_c_bme280",          "status": "BESTANDEN", "dauer_ms": 35,  "komponente": "HAL"},
+    {"name": "test_hal_c_gpio",            "status": "BESTANDEN", "dauer_ms": 18,  "komponente": "HAL"},
+    {"name": "test_hal_rust_init",         "status": "BESTANDEN", "dauer_ms": 22,  "komponente": "HAL"},
+    {"name": "test_hal_rust_bme280",       "status": "BESTANDEN", "dauer_ms": 38,  "komponente": "HAL"},
+    {"name": "test_hal_rust_gpio",         "status": "BESTANDEN", "dauer_ms": 19,  "komponente": "HAL"},
+    {"name": "test_backend_wechsel",       "status": "BESTANDEN", "dauer_ms": 28,  "komponente": "HAL"},
+    {"name": "test_backend_c_zu_rust",     "status": "BESTANDEN", "dauer_ms": 45,  "komponente": "HAL"},
+    {"name": "test_backend_env_var",       "status": "BESTANDEN", "dauer_ms": 12,  "komponente": "HAL"},
+    {"name": "test_fallback_primaer_fehler","status": "BESTANDEN","dauer_ms": 55,  "komponente": "HAL"},
+    {"name": "test_fallback_beide_fehlen", "status": "BESTANDEN", "dauer_ms": 48,  "komponente": "HAL"},
+    {"name": "test_fallback_auto",         "status": "BESTANDEN", "dauer_ms": 62,  "komponente": "HAL"},
+    {"name": "test_mock_init",             "status": "BESTANDEN", "dauer_ms": 3,   "komponente": "HAL"},
+    {"name": "test_mock_bme280",           "status": "BESTANDEN", "dauer_ms": 5,   "komponente": "HAL"},
+    {"name": "test_mock_fehler_injektion", "status": "BESTANDEN", "dauer_ms": 8,   "komponente": "HAL"},
+    {"name": "test_mock_call_tracking",    "status": "BESTANDEN", "dauer_ms": 6,   "komponente": "HAL"},
+    {"name": "test_hal_race_condition",    "status": "BESTANDEN", "dauer_ms": 450, "komponente": "HAL"},
+    {"name": "test_hal_i2c_fehler",        "status": "BESTANDEN", "dauer_ms": 15,  "komponente": "HAL"},
+    {"name": "test_hal_gpio_fehler",       "status": "BESTANDEN", "dauer_ms": 12,  "komponente": "HAL"},
+    {"name": "test_hal_uart_fehler",       "status": "BESTANDEN", "dauer_ms": 14,  "komponente": "HAL"},
+    {"name": "test_bme280_endpoint",       "status": "BESTANDEN", "dauer_ms": 35,  "komponente": "API"},
+    {"name": "test_bme280_json_struktur",  "status": "BESTANDEN", "dauer_ms": 28,  "komponente": "API"},
+    {"name": "test_gpio_get",              "status": "BESTANDEN", "dauer_ms": 22,  "komponente": "API"},
+    {"name": "test_gpio_post",             "status": "BESTANDEN", "dauer_ms": 25,  "komponente": "API"},
+    {"name": "test_uart_send",             "status": "BESTANDEN", "dauer_ms": 42,  "komponente": "API"},
+    {"name": "test_uart_receive",          "status": "BESTANDEN", "dauer_ms": 115, "komponente": "API"},
+    {"name": "test_spi_transfer_endpoint", "status": "BESTANDEN", "dauer_ms": 38,  "komponente": "API"},
+    {"name": "test_backend_endpoint",      "status": "BESTANDEN", "dauer_ms": 18,  "komponente": "API"},
+    {"name": "test_health_endpoint",       "status": "BESTANDEN", "dauer_ms": 12,  "komponente": "API"},
+    {"name": "test_sse_bme280",            "status": "BESTANDEN", "dauer_ms": 2150,"komponente": "API"},
+    {"name": "test_gpio_invalid_pin",      "status": "FEHLGESCHLAGEN","dauer_ms": 8,"komponente": "API"},
+    {"name": "test_cli_help",              "status": "BESTANDEN", "dauer_ms": 55,  "komponente": "CLI"},
+    {"name": "test_cli_version",           "status": "BESTANDEN", "dauer_ms": 48,  "komponente": "CLI"},
+    {"name": "test_config_init",           "status": "BESTANDEN", "dauer_ms": 62,  "komponente": "CLI"},
+    {"name": "test_config_laden",          "status": "BESTANDEN", "dauer_ms": 45,  "komponente": "CLI"},
+    {"name": "test_config_set",            "status": "BESTANDEN", "dauer_ms": 58,  "komponente": "CLI"},
+    {"name": "test_config_profile",        "status": "BESTANDEN", "dauer_ms": 52,  "komponente": "CLI"},
+    {"name": "test_completion_bash",       "status": "BESTANDEN", "dauer_ms": 85,  "komponente": "CLI"},
+    {"name": "test_completion_zsh",        "status": "BESTANDEN", "dauer_ms": 88,  "komponente": "CLI"},
+    {"name": "test_installer_syntax",      "status": "BESTANDEN", "dauer_ms": 32,  "komponente": "CLI"},
+    {"name": "test_web_gui_html",          "status": "BESTANDEN", "dauer_ms": 45,  "komponente": "GUI"},
+    {"name": "test_web_gui_bme280",        "status": "BESTANDEN", "dauer_ms": 62,  "komponente": "GUI"},
+    {"name": "test_web_gui_gpio",          "status": "BESTANDEN", "dauer_ms": 58,  "komponente": "GUI"},
+    {"name": "test_desktop_gui_build",     "status": "BESTANDEN", "dauer_ms": 125, "komponente": "GUI"},
+    {"name": "test_tui_build",             "status": "BESTANDEN", "dauer_ms": 98,  "komponente": "GUI"},
+    {"name": "test_gui_refresh",           "status": "BESTANDEN", "dauer_ms": 2200,"komponente": "GUI"},
+    {"name": "test_gui_backend_wechsel",   "status": "BESTANDEN", "dauer_ms": 75,  "komponente": "GUI"},
+    {"name": "test_gui_dark_theme",        "status": "ÜBERSPRUNGEN","dauer_ms": 0, "komponente": "GUI"},
+    {"name": "test_concurrent_gpio",       "status": "BESTANDEN", "dauer_ms": 320, "komponente": "HAL"},
+    {"name": "test_concurrent_bme280",     "status": "BESTANDEN", "dauer_ms": 285, "komponente": "HAL"}
+  ]
+}

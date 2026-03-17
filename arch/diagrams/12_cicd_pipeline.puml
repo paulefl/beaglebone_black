@@ -1,0 +1,103 @@
+@startuml 12_cicd_pipeline
+!theme plain
+skinparam backgroundColor #060a10
+skinparam defaultFontColor #94a3b8
+skinparam defaultFontName "JetBrains Mono"
+skinparam defaultFontSize 9
+skinparam ArrowColor #475569
+skinparam ArrowThickness 1.5
+
+skinparam activity {
+  BackgroundColor #111c2a
+  BorderColor #1e3048
+  FontColor #e2e8f0
+  DiamondBackgroundColor #1e293b
+  DiamondBorderColor #fbbf24
+  DiamondFontColor #e2e8f0
+  StartColor #3b82f6
+  EndColor #22c55e
+  BarColor #334155
+}
+
+title <color:#fbbf24><b>CI/CD Pipeline — Drone CI · Podman · Gitea</b></color>
+
+|<color:#64748b>Gitea|
+start
+:git push / git tag;
+
+|<color:#fbbf24>Drone CI|
+fork
+  :<color:#818cf8><b>Pipeline 1</b>
+  1-libraries
+  ────────────
+  build-c-lib
+  build-rust-lib
+  test-c-lib
+  test-rust-lib;
+
+fork again
+  :<color:#38bdf8><b>Pipeline 2</b>
+  2-embedded-sw
+  ──────────────
+  test-hal-unit
+  test-hal-race
+  build-go-api
+  qemu-test ARMv7
+  deploy BeagleBone
+  test-hardware C/RS/Auto;
+
+fork again
+  :<color:#4ade80><b>Pipeline 3</b>
+  3-tools
+  ────────
+  lint CLI/TUI/GUI
+  test-cli
+  build 4 Plattformen
+  package installer;
+
+fork again
+  :<color:#60a5fa><b>Pipeline 4</b>
+  4-webapp
+  ─────────
+  npm test
+  npm build
+  package ZIP;
+
+end fork
+
+:<color:#f59e0b><b>Pipeline 7</b>
+7-reports
+──────────
+Go Tests → JSON
+Python Tests → JSON
+collect-results
+generate-reports
+generate-architecture
+check-quality-gates
+save-trend
+package-artifacts;
+
+if (Git Tag?) then (ja)
+  :<color:#ef4444><b>Pipeline 5</b>
+  5-release
+  ──────────
+  Docker build
+  Gitea Release
+  Upload Artefakte
+  Checksums;
+  stop
+else (nein)
+  :publish-wiki
+  notify Slack;
+  stop
+endif
+
+|<color:#64748b>Cron 02:00|
+:<color:#94a3b8><b>Pipeline 6</b>
+6-nightly
+──────────
+HW Tests C+Rust+Auto
+Slack Notify;
+stop
+
+@enduml

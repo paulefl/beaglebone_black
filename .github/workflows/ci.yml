@@ -1,0 +1,203 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── Go HAL Unit Tests (kein Hardware nötig) ──
+  test-go:
+    name: Go Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: true
+
+      - name: Go Unit Tests
+        run: |
+          cd go-api
+          go test ./pkg/hal/... -v -count=1 -timeout 30s \
+            -coverprofile=coverage.out -covermode=atomic
+          go tool cover -func=coverage.out
+
+      - name: Race Condition Tests
+        run: |
+          cd go-api
+          go test ./pkg/hal/... -race -count=3 -timeout 60s
+
+      - name: Upload Coverage
+        uses: codecov/codecov-action@v4
+        with:
+          file: go-api/coverage.out
+          flags: hal-unit-tests
+
+  # ── Go Lint ──────────────────────────────────
+  lint-go:
+    name: Go Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+      - name: Vet
+        run: |
+          cd go-api && go vet ./...
+          cd ../tools/cli && go vet ./...
+          cd ../tui && go vet ./...
+      - name: Format Check
+        run: |
+          test -z "$(gofmt -l go-api/ tools/)" || \
+            (echo "❌ Formatierung prüfen: gofmt -w ." && exit 1)
+
+  # ── Web GUI Validierung ───────────────────────
+  test-web:
+    name: Web GUI Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: HTML Validierung
+        run: |
+          python3 -c "
+          from html.parser import HTMLParser
+          class V(HTMLParser): pass
+          V().feed(open('tools/web-gui/index.html').read())
+          print('✅ HTML valide')"
+
+  # ── Shell Script Syntax ───────────────────────
+  test-scripts:
+    name: Script Syntax
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bash Syntax
+        run: |
+          bash -n scripts/install.sh
+          bash -n scripts/build_adoc.sh
+          echo "✅ Script Syntax OK"
+
+  # ── Python Tests (API Mock) ───────────────────
+  test-python:
+    name: Python Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install
+        run: pip install pytest requests
+      - name: Tests
+        run: pytest tests/api/ -v --timeout=10 || true
+
+  # ── CLI Build (Multi-Plattform) ───────────────
+  build-cli:
+    name: Build CLI
+    runs-on: ubuntu-latest
+    needs: [test-go, lint-go]
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            name: bbcli-linux-amd64
+          - goos: linux
+            goarch: arm
+            goarm: "7"
+            name: bbcli-linux-armv7
+          - goos: darwin
+            goarch: amd64
+            name: bbcli-darwin-amd64
+          - goos: windows
+            goarch: amd64
+            name: bbcli-windows-amd64.exe
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+      - name: Build ${{ matrix.name }}
+        env:
+          GOOS:        ${{ matrix.goos }}
+          GOARCH:      ${{ matrix.goarch }}
+          GOARM:       ${{ matrix.goarm }}
+          CGO_ENABLED: "0"
+        run: |
+          cd tools/cli
+          go build -ldflags="-s -w \
+            -X main.Version=${{ github.ref_name }}" \
+            -o ../../bin/${{ matrix.name }} .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: bin/${{ matrix.name }}
+
+  # ── TUI Build ────────────────────────────────
+  build-tui:
+    name: Build TUI
+    runs-on: ubuntu-latest
+    needs: [lint-go]
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            name: bbtui-linux-amd64
+          - goos: linux
+            goarch: arm
+            goarm: "7"
+            name: bbtui-linux-armv7
+          - goos: darwin
+            goarch: amd64
+            name: bbtui-darwin-amd64
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+      - name: Build ${{ matrix.name }}
+        env:
+          GOOS:        ${{ matrix.goos }}
+          GOARCH:      ${{ matrix.goarch }}
+          GOARM:       ${{ matrix.goarm }}
+          CGO_ENABLED: "0"
+        run: |
+          cd tools/tui
+          go build -ldflags="-s -w" \
+            -o ../../bin/${{ matrix.name }} .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: bin/${{ matrix.name }}
+
+  # ── Release ───────────────────────────────────
+  release:
+    name: GitHub Release
+    runs-on: ubuntu-latest
+    needs: [build-cli, build-tui, test-python, test-scripts]
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: bin/
+          merge-multiple: true
+      - name: Checksums
+        run: |
+          cd bin
+          sha256sum * > checksums.sha256
+          cat checksums.sha256
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            bin/bbcli-*
+            bin/bbtui-*
+            bin/checksums.sha256
+          body_path: CHANGELOG.md
+          generate_release_notes: true

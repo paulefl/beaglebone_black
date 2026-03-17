@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>BeagleBone Black Dashboard</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',sans-serif;background:#0f172a;color:#e2e8f0}
+  header{background:#1e293b;padding:1rem 2rem;border-bottom:2px solid #3b82f6;display:flex;justify-content:space-between}
+  header h1{font-size:1.4rem;color:#3b82f6}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1rem;padding:1.5rem}
+  .card{background:#1e293b;border-radius:12px;padding:1.5rem;border:1px solid #334155}
+  .card h2{font-size:1rem;color:#94a3b8;margin-bottom:1rem}
+  .metric{background:#0f172a;border-radius:8px;padding:.75rem;text-align:center;margin-bottom:.5rem}
+  .val{font-size:1.5rem;font-weight:700;color:#3b82f6}
+  .unit{font-size:.75rem;color:#64748b}
+  input,select{width:100%;background:#0f172a;border:1px solid #475569;color:#e2e8f0;padding:.5rem;border-radius:6px;margin-top:.25rem}
+  .btn{padding:.5rem 1rem;border-radius:6px;border:none;cursor:pointer;margin-top:.5rem;font-weight:600}
+  .btn-primary{background:#3b82f6;color:white}
+  .backend-row{display:flex;gap:.5rem;margin-top:.5rem}
+  .bkbtn{flex:1;padding:.5rem;border-radius:6px;border:2px solid #334155;background:#0f172a;color:#94a3b8;cursor:pointer}
+  .bkbtn.active{border-color:#3b82f6;color:#3b82f6;background:#1e3a5f}
+  .toast{position:fixed;bottom:1rem;right:1rem;background:#1e293b;border:1px solid #334155;border-radius:8px;padding:.75rem 1rem;opacity:0;transition:opacity .3s}
+  .toast.show{opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <h1>🤖 BeagleBone Black Dashboard</h1>
+  <span id="status" style="color:#64748b;font-size:.85rem">Verbinde...</span>
+</header>
+<div class="grid">
+  <div class="card">
+    <h2>🌡 BME280 Sensor</h2>
+    <div class="metric"><div class="val" id="temp">--</div><div class="unit">°C Temperatur</div></div>
+    <div class="metric"><div class="val" id="hum">--</div><div class="unit">% Luftfeuchtigkeit</div></div>
+    <div class="metric"><div class="val" id="press">--</div><div class="unit">hPa Luftdruck</div></div>
+    <div class="metric"><div class="val" id="alt">--</div><div class="unit">m Höhe</div></div>
+  </div>
+  <div class="card">
+    <h2>⚡ GPIO</h2>
+    <label>Pin<input type="number" id="gpio-pin" placeholder="z.B. 60"></label>
+    <div style="display:flex;gap:.5rem;margin-top:.5rem">
+      <button class="btn btn-primary" onclick="setGPIO(1)">🟢 HIGH</button>
+      <button class="btn" style="background:#ef4444;color:white" onclick="setGPIO(0)">🔴 LOW</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>🔧 HAL Backend</h2>
+    <div class="backend-row">
+      <div class="bkbtn" id="btn-c"    onclick="setBackend('c')">⚙️ C</div>
+      <div class="bkbtn" id="btn-rust" onclick="setBackend('rust')">🦀 Rust</div>
+      <div class="bkbtn" id="btn-auto" onclick="setBackend('auto')">🔄 Auto</div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const API=`http://${location.hostname}:5000`;
+function toast(m,ok=true){const t=document.getElementById('toast');t.textContent=m;t.className='toast show '+(ok?'':'');setTimeout(()=>t.className='toast',2500)}
+async function fetchBME280(){
+  try{const d=await(await fetch(API+'/api/v1/bme280')).json();
+  document.getElementById('temp').textContent=d.temperature.toFixed(1);
+  document.getElementById('hum').textContent=d.humidity.toFixed(1);
+  document.getElementById('press').textContent=d.pressure.toFixed(1);
+  document.getElementById('alt').textContent=d.altitude.toFixed(0);
+  document.getElementById('status').textContent='Online: '+d.backend;}catch(e){document.getElementById('status').textContent='Offline'}}
+async function setGPIO(v){const pin=document.getElementById('gpio-pin').value;if(!pin){toast('Pin eingeben!',false);return}
+  await fetch(API+'/api/v1/gpio/'+pin,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({value:v})});
+  toast('Pin '+pin+' → '+(v?'HIGH':'LOW'))}
+async function setBackend(b){
+  await fetch(API+'/api/v1/backend',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({backend:b})});
+  ['c','rust','auto'].forEach(x=>document.getElementById('btn-'+x).classList.toggle('active',x===b));
+  toast('Backend → '+b)}
+fetchBME280();setInterval(fetchBME280,2000);
+</script>
+</body></html>

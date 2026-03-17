@@ -1,0 +1,629 @@
+= BeagleBone Black — SW Architektur
+:author: Embedded SW Team
+:email: embedded@example.com
+:revnumber: 1.0.0
+:revdate: 2026-03-17
+:revremark: Initiale Version
+:doctype: book
+:toc: left
+:toc-title: Inhaltsverzeichnis
+:toclevels: 3
+:sectnums:
+:sectnumlevels: 4
+:icons: font
+:icon-set: fa
+:source-highlighter: rouge
+:rouge-style: monokai
+:numbered:
+:experimental:
+:stem: latexmath
+:imagesdir: images
+:plantumldir: diagrams
+:xrefstyle: full
+:lang: de
+
+ifdef::backend-html5[]
+:toc-placement: left
+endif::[]
+
+// Farb-Definitionen
+:blue: #3b82f6
+:green: #22c55e
+:orange: #fb923c
+:red: #ef4444
+:yellow: #fbbf24
+:purple: #8b5cf6
+
+// Rollen
+:go: pass:[<span class="label go">Go</span>]
+:c-lang: pass:[<span class="label c">C</span>]
+:rust: pass:[<span class="label rust">Rust</span>]
+:python: pass:[<span class="label python">Python</span>]
+:hw: pass:[<span class="label hw">HW</span>]
+
+== Projektübersicht
+
+[.lead]
+Die BeagleBone Black Embedded SW ist eine mehrschichtige Systemarchitektur
+für den *TI Sitara AM335x (ARMv7 Cortex-A8, 1GHz, 512MB RAM)*.
+Sie verbindet Hardware-nahe C und Rust Bibliotheken über einen
+HAL-Wrapper mit einer Go REST API und mehreren Client-Tools.
+
+=== Projektsteckbrief
+
+[cols="2,3", options="header", width="80%"]
+|===
+| Eigenschaft | Wert
+
+| Plattform | BeagleBone Black (ARMv7 Cortex-A8)
+| Prozessor | TI Sitara AM335x, 1 GHz
+| Arbeitsspeicher | 512 MB DDR3
+| Flash | 4 GB eMMC
+| Betriebssystem | Debian Linux, Kernel 5.x (ARMv7 HF)
+| Primärsprachen | Go, C, Rust
+| Container Runtime | Podman (rootless)
+| CI/CD | Drone CI + Gitea
+| Architektur-Schichten | 5 (Client → API → HAL → Libraries → Hardware)
+|===
+
+=== Systemziele
+
+[NOTE]
+====
+Das System verfolgt folgende primäre Ziele:
+
+* *Hardware-Abstraktion*: Einheitlicher Zugriff auf GPIO, I2C, UART, SPI
+  unabhängig vom Backend (C oder Rust)
+* *Sicherheit*: Rust als speichersicheres Backend, C als leistungsoptimiertes
+  Backend
+* *Beobachtbarkeit*: REST API + SSE Streams für Echtzeit-Monitoring
+* *Testbarkeit*: Mock Driver für Unit Tests ohne physische Hardware
+* *Portabilität*: Cross-Compilation für ARMv7, amd64, darwin, windows
+====
+
+== Architekturübersicht
+
+plantuml::diagrams/01_systemkontext.puml[format=svg,align=center]
+
+=== Schichtenarchitektur
+
+plantuml::diagrams/02_schichten.puml[format=svg,align=center]
+
+Die Architektur ist in fünf klar getrennte Schichten aufgeteilt:
+
+[cols="1,2,4", options="header"]
+|===
+| Nr | Schicht | Beschreibung
+
+| 01 | <<client-layer,Client Layer>>
+| Web GUI, Desktop GUI, Terminal TUI, CLI, Test Suite
+
+| 02 | <<api-layer,API Layer>>
+| Go REST Server (:5000), 7 Handler, SSE Streams
+
+| 03 | <<hal-layer,HAL Layer>>
+| Hardware Abstraction, C/Rust/Auto Driver, Mock Driver
+
+| 04 | <<library-layer,Library Layer>>
+| C Hardware Libraries (CGO), Rust Hardware Libraries (FFI)
+
+| 05 | <<hardware-layer,Hardware Layer>>
+| BeagleBone Black, BME280, GPIO, UART, SPI
+|===
+
+== Komponentenbeschreibung
+
+[[client-layer]]
+=== Client Layer (Schicht 01)
+
+plantuml::diagrams/03_client_layer.puml[format=svg,align=center]
+
+==== Web GUI
+
+[cols="2,3"]
+|===
+| Sprache | HTML / CSS / JavaScript
+| Framework | Vanilla JS + SSE
+| Port | 8090
+| Funktionen | BME280 Live-Dashboard, GPIO Steuerung,
+  UART/SPI Konfiguration, Backend-Auswahl
+|===
+
+[source,javascript]
+.Web GUI — SSE Stream Anbindung
+----
+const es = new EventSource(`${API}/api/v1/bme280/stream`);
+es.onmessage = e => {
+  const data = JSON.parse(e.data);
+  updateDashboard(data.c, data.rust);
+};
+----
+
+==== Desktop GUI (Fyne)
+
+[cols="2,3"]
+|===
+| Sprache | Go
+| Framework | Fyne v2
+| Plattform | Linux (amd64)
+| Funktionen | Tab-basierte Oberfläche für alle Konfigurationsoptionen
+|===
+
+==== Terminal TUI (BubbleTea)
+
+[cols="2,3"]
+|===
+| Sprache | Go
+| Framework | BubbleTea + Lipgloss
+| Plattform | Linux, macOS, Windows
+| Funktionen | Keyboard-Navigation, Echtzeit-Updates, Dark Theme
+|===
+
+==== CLI (bbcli)
+
+[cols="2,3"]
+|===
+| Sprache | Go
+| Framework | Cobra + Viper
+| Plattform | Linux (amd64/armv7), macOS, Windows
+| Funktionen | Alle API-Operationen, Shell Completion,
+  Konfigurationsdatei ~/.bbcli.yaml, Profile
+|===
+
+[source,bash]
+.CLI Verwendung
+----
+# BME280 lesen
+bbcli bme280 read
+
+# GPIO setzen
+bbcli gpio write 60 1 --backend rust
+
+# Backend wechseln
+bbcli backend set auto
+
+# System Status
+bbcli system status
+
+# Shell Completion
+bbcli completion bash >> ~/.bashrc
+----
+
+[[api-layer]]
+=== API Layer (Schicht 02)
+
+plantuml::diagrams/04_api_layer.puml[format=svg,align=center]
+
+==== REST API Endpoints
+
+[cols="2,1,3", options="header"]
+|===
+| Endpoint | Methode | Beschreibung
+
+| `/health` | GET | System-Status, Backend, Driver
+| `/api/v1/bme280` | GET | Temperatur, Luftfeuchtigkeit, Druck, Höhe
+| `/api/v1/bme280/stream` | GET (SSE) | Echtzeit-Stream alle 2s
+| `/api/v1/bme280/c` | GET | Explizit C-Backend
+| `/api/v1/bme280/rust` | GET | Explizit Rust-Backend
+| `/api/v1/gpio` | GET | Alle GPIO Pins
+| `/api/v1/gpio/{pin}` | GET | Einzelner Pin
+| `/api/v1/gpio/{pin}` | POST | Pin setzen (value: 0/1)
+| `/api/v1/uart/config` | POST | UART konfigurieren
+| `/api/v1/uart/send` | POST | Daten senden
+| `/api/v1/uart/receive` | GET | Daten empfangen
+| `/api/v1/spi/config` | POST | SPI konfigurieren
+| `/api/v1/spi/transfer` | POST | Transfer ausführen
+| `/api/v1/backend` | POST | Backend wechseln (c/rust/auto)
+|===
+
+==== API Response Format
+
+[source,json]
+.BME280 Response
+----
+{
+  "temperature": 23.45,
+  "humidity":    48.72,
+  "pressure":    1013.25,
+  "altitude":    89.3,
+  "timestamp":   "2026-03-17T10:00:00Z",
+  "backend":     "c"
+}
+----
+
+[[hal-layer]]
+=== HAL Layer (Schicht 03)
+
+plantuml::diagrams/05_hal_layer.puml[format=svg,align=center]
+
+==== HAL Interface
+
+Der HAL (Hardware Abstraction Layer) definiert ein einheitliches
+Go Interface für alle Hardware-Operationen:
+
+[source,go]
+.HAL Interface Definition
+----
+type HardwareDriver interface {
+    Name()    string
+    Backend() Backend
+
+    BME280Read()                          (*BME280Data, error)
+    GPIOExport(pin uint32)                error
+    GPIOSetDirection(pin uint32, out bool) error
+    GPIORead(pin uint32)                  (*GPIOData, error)
+    GPIOWrite(pin uint32, value int)      error
+    UARTOpen(port string, baud uint32)    error
+    UARTWrite(data []byte)                (int, error)
+    UARTRead(timeoutMs int)               (*UARTData, error)
+    UARTClose()
+    SPITransfer(dev string, speed uint32,
+                tx []byte)                (*SPIData, error)
+    Init()  error
+    Close()
+}
+----
+
+==== Backend Auswahl
+
+[source,go]
+.Factory Pattern — Backend Auswahl
+----
+func NewDriver(cfg *Config) (HardwareDriver, error) {
+    switch cfg.Backend {
+    case BackendC:
+        return cdriver.New(cfg)    // C via CGO
+    case BackendRust:
+        return rustdriver.New(cfg) // Rust via FFI
+    case BackendAuto:
+        return newAutoDriver(cfg)  // C → Rust Fallback
+    }
+}
+----
+
+plantuml::diagrams/06_hal_fallback.puml[format=svg,align=center]
+
+[[library-layer]]
+=== Library Layer (Schicht 04)
+
+plantuml::diagrams/07_library_layer.puml[format=svg,align=center]
+
+==== C Library (libhardware.so)
+
+[cols="2,2,3", options="header"]
+|===
+| Modul | Schnittstelle | Beschreibung
+
+| `bme280.c` | I2C ioctl | BME280 Sensor, Bosch Kompensationsalgorithmus
+| `gpio.c` | sysfs | GPIO Export, Direction, Read/Write
+| `uart.c` | termios | Serial Port, Baudrate, Parität
+| `spi.c` | spidev ioctl | SPI Transfer, Mode 0-3, bis 48 MHz
+|===
+
+[source,c]
+.BME280 Read — C Implementierung
+----
+int bme280_read(bme280_dev_t *dev, bme280_data_t *out) {
+    uint8_t raw[8];
+    if (i2c_read_reg(dev->fd, 0xF7, raw, 8) < 0)
+        return -1;
+
+    int32_t raw_temp  = ((int32_t)raw[3]<<12)
+                      | ((int32_t)raw[4]<<4)
+                      | (raw[5]>>4);
+    out->temperature = comp_temp(dev, raw_temp);
+    out->pressure    = comp_press(dev, raw_press);
+    out->humidity    = comp_hum(dev, raw_hum);
+    out->altitude    = calc_altitude(out->pressure);
+    return 0;
+}
+----
+
+==== Rust Library (libhardware_rs.so)
+
+[cols="2,2,3", options="header"]
+|===
+| Modul | Crate | Beschreibung
+
+| `bme280.rs` | linux-embedded-hal | BME280, memory-safe I2C
+| `gpio.rs` | std::fs | sysfs GPIO, ownership-basiert
+| `uart.rs` | serialport | Serial Port, async-ready
+| `spi.rs` | spidev | SPI Transfer, zero-copy
+|===
+
+[source,rust]
+.BME280 FFI Export — Rust
+----
+#[no_mangle]
+pub unsafe extern "C" fn rs_bme280_read(
+    i2c_path: *const c_char,
+    addr: u8,
+) -> RsBme280Data {
+    let i2c    = I2cdev::new(path)?;
+    let mut s  = BME280::new(i2c, addr, &mut Delay)?;
+    s.init(&mut Delay)?;
+    let m = s.measure(&mut Delay)?;
+    RsBme280Data {
+        temperature: m.temperature as f64,
+        humidity:    m.humidity as f64,
+        pressure:    m.pressure as f64 / 100.0,
+        error:       0,
+    }
+}
+----
+
+[[hardware-layer]]
+=== Hardware Layer (Schicht 05)
+
+plantuml::diagrams/08_hardware_layer.puml[format=svg,align=center]
+
+==== BeagleBone Black Spezifikation
+
+[cols="2,3", options="header"]
+|===
+| Eigenschaft | Wert
+
+| Prozessor | TI AM335x, ARM Cortex-A8, 1 GHz
+| Architektur | ARMv7-A (32-bit), Hard Float ABI
+| RAM | 512 MB DDR3L @ 800 MHz
+| eMMC | 4 GB (Rev C)
+| GPIO | 65 Pins (P8/P9 Header)
+| I2C | 3 Busse (Bus 1 für BME280)
+| SPI | 2 Busse
+| UART | 6 Ports (UART1 standardmäßig genutzt)
+| USB | 1x Host, 1x Client (Mini-USB)
+| Ethernet | 10/100 Mbit/s
+|===
+
+==== BME280 Verkabelung
+
+[source]
+.I2C Verbindung — P9 Header
+----
+BeagleBone Black        BME280
+──────────────────────────────
+P9_19 (I2C2_SCL)  ───►  SCL
+P9_20 (I2C2_SDA)  ───►  SDA
+P9_3  (3.3V)      ───►  VCC
+P9_1  (GND)       ───►  GND
+                  ───►  SDO → GND  (Adresse 0x76)
+----
+
+[WARNING]
+====
+Der BeagleBone Black verfügt über *512 MB RAM*.
+Schwere Laufzeitumgebungen (JVM, Python-Interpreter als Daemon) sind
+zu vermeiden. Go und Rust erzeugen statische Binaries mit minimalem
+Speicherbedarf.
+====
+
+== Kommunikationsflüsse
+
+plantuml::diagrams/09_kommunikation.puml[format=svg,align=center]
+
+=== Datenfluss BME280
+
+plantuml::diagrams/10_sequenz_bme280.puml[format=svg,align=center]
+
+=== HAL Fallback Sequenz
+
+plantuml::diagrams/11_sequenz_fallback.puml[format=svg,align=center]
+
+== CI/CD Pipeline
+
+plantuml::diagrams/12_cicd_pipeline.puml[format=svg,align=center]
+
+=== Pipeline Übersicht
+
+[cols="1,2,3,2", options="header"]
+|===
+| Pipeline | Trigger | Hauptschritte | Artefakte
+
+| 1-Libraries | push/PR/tag | C bauen, Rust bauen,
+  Unit Tests | libhardware.so, libhardware_rs.so
+
+| 2-Embedded SW | push/PR/tag | HAL Tests (Mock),
+  Go API bauen, QEMU ARMv7, HW Deploy+Test | embedded-armv7
+
+| 3-Tools | push/PR/tag | lint, test, build
+  CLI/TUI/GUI (4 Plattformen) | bbcli, bbtui, bbgui
+
+| 4-WebApp | push/PR/tag | npm test, build,
+  package | webapp.zip
+
+| 5-Release | tag only | Docker build,
+  Gitea Release, Checksums | Alle Artefakte
+
+| 6-Nightly | cron 02:00 | HW Tests C+Rust+Auto,
+  Slack Notify | Test Bericht
+
+| 7-Reports | push/PR/tag | Test sammeln,
+  Reports generieren, Quality Gates,
+  Wiki + Release | HTML, PDF, MD, JSON
+|===
+
+=== Quality Gates
+
+[cols="2,2,1", options="header"]
+|===
+| Gate | Schwellenwert | Status
+
+| Test Erfolgsrate | ≥ 90% | icon:check-circle[role=green]
+| Ø Code Coverage | ≥ 75% | icon:check-circle[role=green]
+| Min Code Coverage | ≥ 50% | icon:check-circle[role=green]
+| Requirements impl. | ≥ 80% | icon:check-circle[role=green]
+|===
+
+== Requirements Übersicht
+
+=== Requirements pro Komponente
+
+[cols="1,2,1,1,1", options="header"]
+|===
+| ID | Titel | Priorität | Status | Coverage
+
+| EMB-001 | Hardware Initialisierung | HOCH | ✅ | 95%
+| EMB-002 | BME280 Messung | HOCH | ✅ | 98%
+| EMB-003 | GPIO Steuerung | HOCH | ✅ | 92%
+| EMB-004 | UART Kommunikation | MITTEL | ✅ | 88%
+| EMB-005 | SPI Transfer | MITTEL | ✅ | 85%
+| EMB-006 | ARMv7 Cross-Kompilierung | HOCH | ✅ | 90%
+| HAL-001 | C Library Integration | HOCH | ✅ | 93%
+| HAL-002 | Rust Library Integration | HOCH | ✅ | 91%
+| HAL-003 | Backend Laufzeitauswahl | HOCH | ✅ | 96%
+| HAL-004 | Automatischer Fallback | HOCH | ✅ | 97%
+| HAL-005 | Mock Driver | MITTEL | ✅ | 100%
+| API-001 | BME280 Endpoint | HOCH | ✅ | 98%
+| API-002 | GPIO Endpoints | HOCH | ✅ | 95%
+| API-005 | Backend Endpoint | HOCH | ✅ | 96%
+| API-006 | Health Endpoint | HOCH | ✅ | 100%
+| API-008 | CORS Support | MITTEL | 🔴 OFFEN | 0%
+| CLI-001 | Cobra Framework | HOCH | ✅ | 92%
+| CLI-006 | Konfigurationsdatei | HOCH | ✅ | 94%
+| GUI-001 | Web GUI | HOCH | ✅ | 78%
+| GUI-007 | Responsives Layout | NIEDRIG | 🔴 OFFEN | 0%
+|===
+
+== Technologie Stack
+
+[cols="2,2,1,3", options="header"]
+|===
+| Kategorie | Technologie | Version | Zweck
+
+| API Server | Go + gorilla/mux | 1.22 | REST API, SSE, Routing
+| HW Library C | C + libmicrohttpd | gcc 12 | BME280, GPIO, UART, SPI
+| HW Library RS | Rust + actix-web | 1.77 | Memory-safe HW Zugriff
+| CGO Bridge | Go CGO | builtin | C Library → Go
+| FFI Bridge | cbindgen + extern C | 0.26 | Rust Library → Go
+| Desktop GUI | Fyne | v2 | Cross-platform Desktop
+| Terminal TUI | BubbleTea + Lipgloss | v0.25 | Terminal UI
+| CLI | Cobra + Viper | v1.8 | Command Line Interface
+| CI/CD | Drone CI | v2 | Pipeline Automation
+| Container | Podman (rootless) | v4 | Container Runtime
+| Git Server | Gitea | latest | Source + Releases
+| Test Framework | pytest + requests | 3.12 | Integration + HW Tests
+| Report Generator | Python + ReportLab | 3.12 | PDF/HTML/MD Reports
+| Arch Docs | AsciiDoc + PlantUML | — | Diese Dokumentation
+|===
+
+== Entscheidungsprotokoll
+
+=== ADR-001: Go als API-Sprache
+
+[cols="2,4"]
+|===
+| Datum | 2026-01-15
+| Status | Akzeptiert
+| Entscheider | Embedded SW Team
+|===
+
+*Kontext:*
+Wahl der Sprache für den REST API Server auf dem BeagleBone Black.
+
+*Entscheidung:*
+Go wurde gewählt.
+
+*Begründung:*
+- Statische Binaries ohne Runtime-Abhängigkeiten
+- Geringe Speichernutzung (~5 MB für den Server)
+- Exzellente CGO-Integration für C-Bibliotheken
+- Eingebaute HTTP/SSE Unterstützung
+
+*Alternativen:*
+Python (zu viel RAM), Node.js (zu groß), Rust (komplexer für REST)
+
+=== ADR-002: C + Rust parallel als Hardware-Libraries
+
+[cols="2,4"]
+|===
+| Datum | 2026-01-20
+| Status | Akzeptiert
+|===
+
+*Kontext:*
+Wahl der Sprache(n) für direkten Hardware-Zugriff.
+
+*Entscheidung:*
+Beide Sprachen parallel mit automatischem Fallback.
+
+*Begründung:*
+- *C*: Maximale Performance, direkter sysfs/ioctl Zugriff, bewährt
+- *Rust*: Memory Safety, kein undefined behavior, moderne Crates
+- *HAL Wrapper*: Abstrahiert die Wahl — API-Code ist identisch
+
+=== ADR-003: Podman statt Docker
+
+[cols="2,4"]
+|===
+| Datum | 2026-02-01
+| Status | Akzeptiert
+|===
+
+*Entscheidung:*
+Podman (rootless) für alle Container.
+
+*Begründung:*
+- Kein Daemon erforderlich
+- Rootless = erhöhte Sicherheit
+- Docker-kompatibel (gleiche Images)
+- Systemd Quadlet Integration
+
+== Anhang
+
+=== A — Verzeichnisstruktur
+
+[source]
+----
+embedded/
+├── c-lib/                    # C Hardware Library
+│   ├── include/              # Header-Dateien
+│   ├── src/                  # Implementierungen
+│   └── Makefile
+├── rust-lib/                 # Rust Hardware Library
+│   ├── src/                  # Rust Quellcode
+│   ├── Cargo.toml
+│   └── cbindgen.toml         # FFI Header Generator
+├── go-api/                   # Go REST API
+│   ├── cmd/main.go           # Einstiegspunkt
+│   └── pkg/
+│       ├── hal/              # HAL Interface + Drivers
+│       ├── api/              # HTTP Handler
+│       └── models/           # Datenmodelle
+├── tools/
+│   ├── cli/                  # bbcli (Cobra)
+│   ├── tui/                  # bbtui (BubbleTea)
+│   ├── desktop-gui/          # bbgui (Fyne)
+│   └── web-gui/              # Web Dashboard
+├── tests/
+│   ├── api/                  # API Tests (pytest)
+│   ├── hardware/             # Hardware Tests (pytest)
+│   └── cli/                  # CLI Tests (pytest)
+├── reports/                  # Report Generator
+│   └── generate_reports.py
+├── arch/                     # Diese Dokumentation
+│   ├── architektur.adoc      # Haupt-Dokument
+│   └── diagrams/             # PlantUML Diagramme
+├── requirements.json         # Requirements + Tracing
+├── Makefile                  # Globales Build System
+└── .drone.yml                # CI/CD Pipeline
+----
+
+=== B — Glossar
+
+[cols="2,4", options="header"]
+|===
+| Begriff | Definition
+
+| ARMv7 | 32-bit ARM Architektur, genutzt vom Cortex-A8
+| CGO | Go-Mechanismus zum Einbinden von C-Code
+| FFI | Foreign Function Interface — Rust-Funktionen in Go aufrufen
+| HAL | Hardware Abstraction Layer — einheitliches Interface
+| SSE | Server-Sent Events — Echtzeit Push vom Server zum Browser
+| sysfs | Linux Virtual Filesystem für Hardware-Zugriff (/sys)
+| ioctl | I/O Control — direkter Kernel Interface Aufruf
+| Podman | Docker-kompatibler Container Manager ohne Root-Daemon
+| Drone CI | Open-Source CI/CD System (YAML-basiert)
+| Gitea | Self-hosted Git Server (GitHub-Alternative)
+| BME280 | Bosch Umweltsensor (Temperatur, Luftfeuchtigkeit, Druck)
+| Quality Gate | Mindestanforderung an Qualitätsmetriken im CI
+|===

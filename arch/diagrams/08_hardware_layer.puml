@@ -1,0 +1,75 @@
+@startuml 08_hardware_layer
+!theme plain
+skinparam backgroundColor #060a10
+skinparam defaultFontColor #94a3b8
+skinparam defaultFontName "JetBrains Mono"
+skinparam defaultFontSize 10
+skinparam ArrowColor #475569
+skinparam nodeStyle rectangle
+
+skinparam node {
+  BackgroundColor #111c2a
+  BorderColor #4a1942
+  FontColor #f0abfc
+  RoundCorner 8
+}
+skinparam rectangle {
+  BackgroundColor #0d1520
+  BorderColor #1e3048
+  FontColor #e2e8f0
+  RoundCorner 6
+}
+
+title <color:#f0abfc><b>Hardware Layer — BeagleBone Black</b></color>
+
+node "BeagleBone Black\nTI AM335x · ARMv7 Cortex-A8 · 1GHz · 512MB DDR3" as BBB {
+
+  rectangle "P9 Header" as P9 {
+    rectangle "P9_19 SCL\nP9_20 SDA\n(I2C Bus 1)" as I2C_PIN #0d1520
+    rectangle "P9_24 TX\nP9_26 RX\n(UART1/ttyO1)" as UART_PIN #0d1520
+  }
+
+  rectangle "P8 Header" as P8 {
+    rectangle "P8_7..P8_16\nGPIO Pins\n(GPIO1/GPIO2)" as GPIO_PIN #0d1520
+  }
+
+  rectangle "P9 Header SPI" as P9S {
+    rectangle "P9_17 CS\nP9_21 MISO\nP9_22 SCLK\nP9_18 MOSI\n(SPI0)" as SPI_PIN #0d1520
+  }
+
+  rectangle "Linux Debian\nKernel 5.x ARMv7 HF\n/sys · /dev" as OS #0d1520
+}
+
+node "BME280\nBosch Umweltsensor" as BME {
+  rectangle "Temp: -40..+85°C\nHum:  0..100%rH\nPress: 300..1100hPa\nAddr: 0x76" as BME_SPEC
+}
+
+node "GPIO Peripherie\nLED · Relais · Button" as PERIPH {
+  rectangle "3.3V Logic\nMax 25mA/Pin" as GPIO_SPEC
+}
+
+node "UART Gerät\n/dev/ttyO1" as UART_DEV {
+  rectangle "115200 Baud\n8N1 Default" as UART_SPEC
+}
+
+node "SPI Gerät\n/dev/spidev0.0" as SPI_DEV {
+  rectangle "Mode 0-3\nbis 48 MHz" as SPI_SPEC
+}
+
+I2C_PIN  --> BME       : <color:#c084fc>I2C · 400kHz
+GPIO_PIN --> PERIPH    : <color:#c084fc>3.3V Digital
+UART_PIN --> UART_DEV  : <color:#c084fc>Serial RS232
+SPI_PIN  --> SPI_DEV   : <color:#c084fc>SPI 4-Wire
+OS       --> I2C_PIN   : <color:#475569>/dev/i2c-1
+OS       --> GPIO_PIN  : <color:#475569>/sys/class/gpio
+OS       --> UART_PIN  : <color:#475569>/dev/ttyO1
+OS       --> SPI_PIN   : <color:#475569>/dev/spidev0.0
+
+note left of BBB
+  <color:#f0abfc><b>Verbindung zum PC:</b>
+  USB Network: 192.168.7.2
+  Ethernet: DHCP
+  SSH: debian@beaglebone</color>
+end note
+
+@enduml

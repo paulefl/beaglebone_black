@@ -1,0 +1,15 @@
+[package]
+name    = "hardware-rs"
+version = "0.1.0"
+edition = "2021"
+[lib]
+name       = "hardware_rs"
+crate-type = ["cdylib","staticlib"]
+[dependencies]
+linux-embedded-hal = "0.4"
+bme280             = "0.3"
+serialport         = "4"
+spidev             = "0.5"
+libc               = "1"
+[build-dependencies]
+cbindgen = "0.26"

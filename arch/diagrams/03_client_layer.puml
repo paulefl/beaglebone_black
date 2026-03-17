@@ -1,0 +1,58 @@
+@startuml 03_client_layer
+!theme plain
+skinparam backgroundColor #060a10
+skinparam defaultFontColor #94a3b8
+skinparam defaultFontName "JetBrains Mono"
+skinparam defaultFontSize 10
+skinparam ArrowColor #475569
+skinparam componentStyle rectangle
+
+skinparam component {
+  BackgroundColor #111c2a
+  BorderColor #1e3048
+  FontColor #e2e8f0
+  RoundCorner 8
+}
+
+title <color:#38bdf8><b>Client Layer — Detailansicht</b></color>
+
+package "Client Layer" #1e3a5f {
+
+  component "Web GUI\n<color:#64748b>HTML · CSS · JS\nVanilla + SSE\nPort 8090</color>" as WG
+  component "Desktop GUI\n<color:#64748b>Go + Fyne v2\nLinux amd64\nTabs · Dark</color>" as DG
+  component "Terminal TUI\n<color:#64748b>Go + BubbleTea\nLinux·macOS·Win\nKeyboard Nav</color>" as TUI
+  component "CLI (bbcli)\n<color:#64748b>Go + Cobra\n4 Plattformen\nShell Completion</color>" as CLI
+  component "Test Suite\n<color:#64748b>Python + pytest\nHardware Tests\nJSON Reports</color>" as TESTS
+
+}
+
+package "Konfiguration" #1e293b {
+  component "~/.bbcli.yaml\n<color:#64748b>Viper Config\nProfile Support</color>" as CFG
+}
+
+package "API :5000" #022c22 {
+  component "Go REST API\n<color:#64748b>gorilla/mux\nSSE Streams</color>" as API
+}
+
+WG    --> API  : <color:#475569>HTTP/REST + SSE
+DG    --> API  : <color:#475569>HTTP/JSON
+TUI   --> API  : <color:#475569>HTTP/JSON
+CLI   --> API  : <color:#475569>HTTP/JSON
+TESTS --> API  : <color:#475569>HTTP/JSON
+CLI   ..> CFG  : <color:#475569>lädt
+
+note right of CLI
+  <color:#fbbf24>bbcli bme280 read
+  bbcli gpio write 60 1
+  bbcli backend set rust
+  bbcli system status</color>
+end note
+
+note right of TUI
+  <color:#4ade80>Multi-Plattform:
+  Linux amd64/armv7
+  macOS amd64
+  Windows amd64</color>
+end note
+
+@enduml

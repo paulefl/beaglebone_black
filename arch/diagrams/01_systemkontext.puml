@@ -1,0 +1,58 @@
+@startuml 01_systemkontext
+!theme plain
+skinparam backgroundColor #060a10
+skinparam defaultFontColor #94a3b8
+skinparam defaultFontName "JetBrains Mono"
+skinparam defaultFontSize 11
+skinparam ArrowColor #475569
+skinparam ArrowThickness 1.5
+
+skinparam actor {
+  BackgroundColor #1e293b
+  BorderColor #3b82f6
+  FontColor #e2e8f0
+}
+skinparam rectangle {
+  BackgroundColor #111c2a
+  BorderColor #1e3048
+  FontColor #e2e8f0
+  RoundCorner 10
+}
+skinparam database {
+  BackgroundColor #111c2a
+  BorderColor #1e3048
+  FontColor #e2e8f0
+}
+skinparam cloud {
+  BackgroundColor #0d1520
+  BorderColor #1e3048
+  FontColor #e2e8f0
+}
+
+title <color:#38bdf8><b>Systemkontext — BeagleBone Black Embedded SW</b></color>
+
+actor "Entwickler\n/ Operator" as DEV #1e3a5f
+actor "Browser\n/ Web GUI" as WEB #1e3a5f
+
+rectangle "PC (x86_64)" as PC {
+  rectangle "<color:#4ade80><b>Drone CI</b></color>\nPodman (rootless)" as CI #0d2e1a
+  rectangle "<color:#c084fc><b>Gitea</b></color>\nGit Server" as GIT #2d1b69
+  rectangle "<color:#38bdf8><b>CLI / TUI / GUI</b></color>\nbbcli · bbtui · bbgui" as TOOLS #1e3a5f
+}
+
+rectangle "BeagleBone Black\n<color:#f0abfc>ARMv7 · 1GHz · 512MB</color>" as BBB {
+  rectangle "<color:#4ade80><b>Go REST API</b></color>\n:5000" as API #022c22
+  rectangle "<color:#fb923c><b>HAL Wrapper</b></color>\nC · Rust · Auto" as HAL #431407
+  rectangle "<color:#fbbf24><b>Hardware</b></color>\nBME280 · GPIO · UART · SPI" as HW #1a1505
+}
+
+DEV -right-> GIT : push code
+DEV -down-> TOOLS : konfigurieren
+WEB -right-> API : HTTP/REST\nSSE Stream
+TOOLS -right-> API : HTTP/JSON
+GIT -down-> CI : webhook
+CI -right-> BBB : SSH Deploy\n+ Tests
+API -down-> HAL : Go Interface
+HAL -down-> HW : sysfs · ioctl\n/dev/i2c-1
+
+@enduml

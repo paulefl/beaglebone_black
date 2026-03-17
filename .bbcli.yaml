@@ -1,0 +1,29 @@
+connection:
+  host:    "192.168.7.2"
+  port:    5000
+  timeout: 10s
+backend:
+  default:  "auto"
+  fallback: true
+bme280:
+  i2c_bus:      "/dev/i2c-1"
+  address:      "0x76"
+  interval:     2
+  oversampling: 1
+uart:
+  port:    "/dev/ttyO1"
+  baud:    115200
+  timeout: 1000
+spi:
+  device: "/dev/spidev0.0"
+  speed:  1000000
+  mode:   0
+gui:
+  theme:        "dark"
+  refresh_rate: 2
+  web:
+    port: 8090
+profiles:
+  default: {host: "192.168.7.2", port: 5000}
+  lab:     {host: "192.168.1.100", port: 5000}
+  dev:     {host: "localhost",     port: 5000}

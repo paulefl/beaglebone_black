@@ -1,0 +1,59 @@
+@startuml 02_schichten
+!theme plain
+skinparam backgroundColor #060a10
+skinparam defaultFontColor #94a3b8
+skinparam defaultFontName "JetBrains Mono"
+skinparam defaultFontSize 10
+skinparam ArrowColor #475569
+skinparam ArrowThickness 2
+
+skinparam rectangle {
+  RoundCorner 8
+  BorderThickness 2
+}
+
+title <color:#38bdf8><b>Schichtenarchitektur</b></color>
+
+rectangle "<color:#38bdf8><b>01 — CLIENT LAYER</b></color>" as L1 #1e3a5f {
+  rectangle "Web GUI\n<color:#64748b>HTML/JS :8090</color>" as WG #111c2a
+  rectangle "Desktop GUI\n<color:#64748b>Fyne · Go</color>" as DG #111c2a
+  rectangle "Terminal TUI\n<color:#64748b>BubbleTea · Go</color>" as TUI #111c2a
+  rectangle "CLI (bbcli)\n<color:#64748b>Cobra · Go</color>" as CLI #111c2a
+  rectangle "Test Suite\n<color:#64748b>pytest · Python</color>" as TS #111c2a
+}
+
+rectangle "<color:#4ade80><b>02 — API LAYER</b></color>\n<color:#64748b>Go REST Server · Port 5000</color>" as L2 #022c22 {
+  rectangle "Router\n<color:#64748b>gorilla/mux</color>" as RT #0d1520
+  rectangle "BME280\n<color:#64748b>GET · SSE</color>" as HB #0d1520
+  rectangle "GPIO\n<color:#64748b>GET · POST</color>" as HG #0d1520
+  rectangle "UART/SPI\n<color:#64748b>send · recv</color>" as HU #0d1520
+  rectangle "Backend\n<color:#64748b>c·rust·auto</color>" as HBK #0d1520
+  rectangle "Health\n<color:#64748b>/health</color>" as HH #0d1520
+}
+
+rectangle "<color:#fb923c><b>03 — HAL LAYER</b></color>\n<color:#64748b>Hardware Abstraction Layer</color>" as L3 #431407 {
+  rectangle "HAL Interface\n<color:#64748b>Go Interface</color>" as HI #0d1520
+  rectangle "C Driver\n<color:#64748b>CGO Bindings</color>" as CD #0d1520
+  rectangle "Rust Driver\n<color:#64748b>FFI Bindings</color>" as RD #0d1520
+  rectangle "Auto Driver\n<color:#64748b>C→Rust Fallback</color>" as AD #0d1520
+  rectangle "Mock Driver\n<color:#64748b>Unit Tests</color>" as MD #0d1520
+}
+
+rectangle "<color:#818cf8><b>04 — LIBRARY LAYER</b></color>" as L4 #1e1b4b {
+  rectangle "<color:#fbbf24>C Libraries</color>\nbme280.c · gpio.c\nuart.c · spi.c" as CL #111c2a
+  rectangle "<color:#fb923c>Rust Libraries</color>\nbme280.rs · gpio.rs\nuart.rs · spi.rs" as RL #111c2a
+}
+
+rectangle "<color:#f0abfc><b>05 — HARDWARE LAYER</b></color>\n<color:#64748b>BeagleBone Black · ARMv7 · 1GHz · 512MB</color>" as L5 #2d0f29 {
+  rectangle "BME280\n<color:#64748b>I2C-1 · 0x76</color>" as HW1 #111c2a
+  rectangle "GPIO\n<color:#64748b>P8/P9 Header</color>" as HW2 #111c2a
+  rectangle "UART\n<color:#64748b>ttyO1 · 115200</color>" as HW3 #111c2a
+  rectangle "SPI\n<color:#64748b>spidev0.0</color>" as HW4 #111c2a
+}
+
+L1 -down-> L2 : <color:#475569>HTTP/REST · SSE
+L2 -down-> L3 : <color:#475569>Go Interface Call
+L3 -down-> L4 : <color:#fbbf24>CGO (C) <color:#fb923c>/ FFI (Rust)
+L4 -down-> L5 : <color:#475569>sysfs · ioctl · /dev/*
+
+@enduml

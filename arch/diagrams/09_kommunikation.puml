@@ -1,0 +1,52 @@
+@startuml 09_kommunikation
+!theme plain
+skinparam backgroundColor #060a10
+skinparam defaultFontColor #94a3b8
+skinparam defaultFontName "JetBrains Mono"
+skinparam defaultFontSize 10
+skinparam ArrowColor #475569
+skinparam componentStyle rectangle
+
+title <color:#38bdf8><b>Kommunikationsflüsse</b></color>
+
+component "Web GUI\n:8090" as WEB #1e3a5f
+component "CLI/TUI/GUI" as TOOLS #1e3a5f
+component "Drone CI" as CI #1f2937
+component "Test Suite" as TESTS #1e3a5f
+
+component "Go REST API\n:5000" as API #022c22
+
+component "HAL Interface" as HAL #431407
+
+component "C Driver\n(CGO)" as CD #111c2a
+component "Rust Driver\n(FFI)" as RD #111c2a
+
+component "C Library\nlibhardware.so" as CL #1e1b4b
+component "Rust Library\nlibhardware_rs.so" as RL #1e1b4b
+
+component "Linux Kernel\nsysfs · ioctl" as KERNEL #0f172a
+
+component "Hardware\nBME280 · GPIO\nUART · SPI" as HW #2d0f29
+
+WEB   -down-> API    : <color:#38bdf8>HTTP/REST
+WEB   <.down. API    : <color:#38bdf8>SSE Stream
+TOOLS -down-> API    : <color:#38bdf8>HTTP/JSON
+TESTS -down-> API    : <color:#38bdf8>HTTP/JSON
+CI    -down-> HW     : <color:#fbbf24>SSH · SCP\nDeploy + Test
+
+API   -down-> HAL    : <color:#4ade80>Go Interface
+HAL   -down-> CD     : <color:#fbbf24>BackendC
+HAL   -down-> RD     : <color:#fb923c>BackendRust
+CD    -down-> CL     : <color:#fbbf24>CGO call
+RD    -down-> RL     : <color:#fb923c>FFI extern C
+CL    -down-> KERNEL : <color:#818cf8>ioctl · sysfs
+RL    -down-> KERNEL : <color:#818cf8>ioctl · sysfs
+KERNEL -down-> HW   : <color:#f0abfc>/dev/i2c-1\n/dev/ttyO1\n/dev/spidev0.0
+
+note right of HAL
+  <color:#4ade80>BackendAuto:
+  C → Rust Fallback
+  automatisch</color>
+end note
+
+@enduml

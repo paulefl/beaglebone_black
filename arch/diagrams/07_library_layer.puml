@@ -1,0 +1,60 @@
+@startuml 07_library_layer
+!theme plain
+skinparam backgroundColor #060a10
+skinparam defaultFontColor #94a3b8
+skinparam defaultFontName "JetBrains Mono"
+skinparam defaultFontSize 10
+skinparam ArrowColor #475569
+skinparam componentStyle rectangle
+
+skinparam component {
+  BackgroundColor #111c2a
+  BorderColor #1e3048
+  FontColor #e2e8f0
+  RoundCorner 6
+}
+
+title <color:#818cf8><b>Library Layer — C und Rust Hardware Libraries</b></color>
+
+package "C Library (libhardware.so)\n<color:#64748b>gcc · arm-linux-gnueabihf · CGO</color>" #1e1b4b {
+
+  component "bme280.c\n<color:#64748b>I2C Bus 1 · 0x76\nBosch Kompensation\nTemp/Hum/Press/Alt</color>" as CB #111c2a
+  component "gpio.c\n<color:#64748b>sysfs Interface\n/sys/class/gpio\nExport · R/W</color>" as CG #111c2a
+  component "uart.c\n<color:#64748b>termios API\n/dev/ttyO1\nBaudrate 9600-115200</color>" as CU #111c2a
+  component "spi.c\n<color:#64748b>spidev ioctl\n/dev/spidev0.0\nMode 0-3 · 48MHz</color>" as CS #111c2a
+
+}
+
+package "Rust Library (libhardware_rs.so)\n<color:#64748b>cross · armv7-unknown-linux-musleabihf · FFI</color>" #2d1206 {
+
+  component "bme280.rs\n<color:#64748b>linux-embedded-hal\nbme280 crate\nMemory Safe</color>" as RB #111c2a
+  component "gpio.rs\n<color:#64748b>std::fs (sysfs)\nOwnership-basiert\nZero-Copy R/W</color>" as RG #111c2a
+  component "uart.rs\n<color:#64748b>serialport crate\nAsync-ready\nTimeout Support</color>" as RU #111c2a
+  component "spi.rs\n<color:#64748b>spidev crate\nSafe Transfer\nZero-Copy</color>" as RS #111c2a
+
+}
+
+package "Linux Kernel (ARMv7)" #0f172a {
+  component "I2C Subsystem\n<color:#64748b>/dev/i2c-1</color>" as KI
+  component "GPIO Subsystem\n<color:#64748b>/sys/class/gpio</color>" as KG
+  component "UART Driver\n<color:#64748b>/dev/ttyO1</color>" as KU
+  component "SPI Driver\n<color:#64748b>/dev/spidev0.0</color>" as KS
+}
+
+CB --> KI : <color:#475569>ioctl · I2C_SLAVE
+CG --> KG : <color:#475569>sysfs read/write
+CU --> KU : <color:#475569>termios · open()
+CS --> KS : <color:#475569>SPI_IOC_MESSAGE
+
+RB --> KI : <color:#475569>I2cdev::new()
+RG --> KG : <color:#475569>fs::write/read
+RU --> KU : <color:#475569>serialport::new()
+RS --> KS : <color:#475569>Spidev::open()
+
+note bottom of CB
+  <color:#fbbf24>cbindgen generiert
+  C Header für Rust FFI:
+  hardware_rs.h</color>
+end note
+
+@enduml

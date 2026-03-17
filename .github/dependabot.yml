@@ -1,0 +1,49 @@
+version: 2
+
+updates:
+  # Go Dependencies
+  - package-ecosystem: gomod
+    directory: /go-api
+    schedule:
+      interval: weekly
+      day: monday
+    labels: ["dependencies", "go"]
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      go-deps:
+        patterns: ["*"]
+
+  # Go CLI Dependencies
+  - package-ecosystem: gomod
+    directory: /tools/cli
+    schedule:
+      interval: weekly
+      day: monday
+    labels: ["dependencies", "go", "cli"]
+
+  # Go TUI Dependencies
+  - package-ecosystem: gomod
+    directory: /tools/tui
+    schedule:
+      interval: weekly
+    labels: ["dependencies", "go", "tui"]
+
+  # Rust Dependencies
+  - package-ecosystem: cargo
+    directory: /rust-lib
+    schedule:
+      interval: weekly
+      day: monday
+    labels: ["dependencies", "rust"]
+    commit-message:
+      prefix: "chore(deps)"
+
+  # GitHub Actions
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    labels: ["dependencies", "github-actions"]
+    commit-message:
+      prefix: "ci(deps)"

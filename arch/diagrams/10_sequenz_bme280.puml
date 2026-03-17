@@ -1,0 +1,78 @@
+@startuml 10_sequenz_bme280
+!theme plain
+skinparam backgroundColor #060a10
+skinparam defaultFontColor #94a3b8
+skinparam defaultFontName "JetBrains Mono"
+skinparam defaultFontSize 10
+skinparam sequenceArrowThickness 1.5
+skinparam sequenceGroupBorderColor #1e3048
+skinparam sequenceGroupFontColor #64748b
+
+skinparam participant {
+  BackgroundColor #111c2a
+  BorderColor #1e3048
+  FontColor #e2e8f0
+}
+skinparam sequence {
+  LifeLineBorderColor #1e3048
+  ArrowColor #475569
+  DividerBackgroundColor #0d1520
+  DividerBorderColor #334155
+  GroupBackgroundColor #0d1520
+  GroupBorderColor #334155
+}
+
+title <color:#4ade80><b>Sequenzdiagramm — BME280 Messung (C Backend)</b></color>
+
+actor "Client\n(Web GUI)" as CLIENT
+participant "Go REST API\n:5000" as API #022c22
+participant "HAL\nInterface" as HAL #431407
+participant "C Driver\n(CGO)" as CD #1e1b4b
+participant "libbme280.c\n(C Library)" as CL #111c2a
+participant "Linux I2C\n/dev/i2c-1" as I2C #0f172a
+participant "BME280\n(0x76)" as SENSOR #2d0f29
+
+CLIENT -> API : GET /api/v1/bme280
+activate API #022c22
+
+API -> HAL : BME280Read()
+activate HAL #431407
+
+HAL -> CD : BME280Read()
+activate CD #1e1b4b
+
+CD -> CL : C.bme280_read(&dev, &data)
+activate CL #111c2a
+
+CL -> I2C : i2c_read_reg(fd, 0xF7, raw, 8)
+activate I2C #0f172a
+
+I2C -> SENSOR : I2C Read\nRegister 0xF7-0xFE
+activate SENSOR #2d0f29
+SENSOR --> I2C : 8 Byte Rohdaten\n[press_msb..hum_lsb]
+deactivate SENSOR
+
+I2C --> CL : raw[8] bytes
+deactivate I2C
+
+note over CL
+  <color:#fbbf24>Bosch Kompensationsalgorithmus:
+  comp_temp()  → 23.45°C
+  comp_press() → 1013.25 hPa
+  comp_hum()   → 48.72%
+  calc_alt()   → 89.3 m</color>
+end note
+
+CL --> CD : bme280_data_t\n{temp, hum, press, alt}
+deactivate CL
+
+CD --> HAL : *BME280Data\n{Temperature: 23.45, ...}
+deactivate CD
+
+HAL --> API : *BME280Data\nbackend: "c"
+deactivate HAL
+
+API --> CLIENT : HTTP 200 JSON\n{"temperature":23.45,\n"humidity":48.72,\n"pressure":1013.25,\n"altitude":89.3,\n"backend":"c"}
+deactivate API
+
+@enduml
