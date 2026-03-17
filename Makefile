@@ -40,6 +40,12 @@ lint:
 test-python:
 	pytest tests/api/ -v --timeout=10
 
+test-report:
+	./scripts/report.sh
+
+test-report-open:
+	./scripts/report.sh --open
+
 deploy:
 	scp bin/embedded go-api/libs/libhardware.so go-api/libs/libhardware_rs.so \
 	  debian@192.168.7.2:/app/
@@ -50,4 +56,4 @@ clean:
 	cd rust-lib && cargo clean
 	rm -f bin/embedded bin/bbcli-*
 
-.PHONY: all c-lib rust-lib go-api cli test test-ci test-cover lint test-python deploy clean
+.PHONY: all c-lib rust-lib go-api cli test test-ci test-cover lint test-python test-report test-report-open deploy clean

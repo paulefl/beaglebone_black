@@ -27,6 +27,10 @@ __pycache__/
 htmlcov/
 
 # ── Reports / Generated ──────────────────
+reports/*.json
+reports/*.out
+reports/*.html
+reports/shell-syntax.txt
 reports/output/
 arch/.cache/
 docs/
@@ -54,3 +58,4 @@ secrets/
 # ── Node (Web GUI) ────────────────────────
 node_modules/
 dist/
+go-api/coverage.out

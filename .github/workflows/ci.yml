@@ -166,6 +166,41 @@ jobs:
           name: ${{ matrix.name }}
           path: bin/${{ matrix.name }}
 
+  # ── Test Report ───────────────────────────────
+  report:
+    name: Test Report
+    runs-on: ubuntu-latest
+    needs: [test-go, lint-go, test-web, test-scripts, test-python]
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.23'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python deps
+        run: pip install -r tests/requirements-dev.txt
+
+      - name: Test Report
+        run: make test-report
+
+      - name: Upload Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-reports
+          path: |
+            reports/*.json
+            reports/*.html
+            reports/*.out
+            reports/shell-syntax.txt
+          retention-days: 30
+
   # ── Release ───────────────────────────────────
   release:
     name: GitHub Release
