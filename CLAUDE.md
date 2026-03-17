@@ -1,0 +1,107 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+Embedded software project for the **BeagleBone Black** (ARM Cortex-A8, 512MB RAM). Provides hardware drivers (BME280, GPIO, UART, SPI) through a layered architecture: hardware access in C/Rust → HAL in Go → REST API on port 5000 → client tools (CLI, TUI, GUI, Web).
+
+**Rule:** Hardware access is only implemented in C and Rust — never in Go directly.
+
+## Build Commands
+
+```bash
+make all          # Build C lib + Rust lib + Go API
+make c-lib        # Build C shared library (libhardware.so)
+make rust-lib     # Build Rust shared library (libhardware_rs.so)
+make go-api       # Build REST API server → bin/embedded
+make cli          # Build CLI tool → bin/bbcli-*
+make test         # Run Go unit tests
+make deploy       # Deploy to BeagleBone (debian@192.168.7.2)
+make clean        # Clean all artifacts
+```
+
+**Cross-compilation targets:**
+- Go: `GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=1`
+- Rust: `armv7-unknown-linux-musleabihf`
+- C: `arm-linux-gnueabihf` cross-compiler
+
+## Testing
+
+```bash
+# Go unit tests (HAL with mock driver)
+cd go-api && go test ./pkg/hal/... -v
+cd go-api && go test ./pkg/hal/... -race -count=3
+
+# API integration tests
+pytest tests/api/ -v
+
+# Hardware tests (requires real BeagleBone at 192.168.7.2)
+BEAGLE_HOST=192.168.7.2 pytest tests/hardware/ -v
+
+# Test all backends
+for b in c rust auto; do HW_BACKEND=$b pytest tests/hardware/ -v; done
+```
+
+Quality gates: ≥90% test success rate, ≥75% average coverage, ≥50% per file.
+
+## Architecture
+
+```
+Client Tools (CLI/TUI/GUI/Web)
+        ↓
+REST API Server (go-api/cmd/main.go, :5000)
+        ↓
+HAL Interface (go-api/pkg/hal/interface.go)
+    ↙           ↘
+C Driver      Rust Driver      Mock Driver (tests only)
+(CGO)         (FFI)
+    ↘           ↙
+Hardware (BME280/GPIO/UART/SPI)
+```
+
+**HAL Backends** — selected via `HW_BACKEND` env var:
+- `c` — calls C shared library via CGO
+- `rust` — calls Rust shared library via FFI
+- `auto` — tries C first, falls back to Rust on error (default in production)
+
+The `HardwareDriver` interface in `go-api/pkg/hal/interface.go` defines all hardware operations. New hardware features must be added to all three backend drivers (C, Rust, Mock) plus the interface.
+
+## Key Files
+
+| File | Purpose |
+|------|---------|
+| `go-api/cmd/main.go` | HTTP server entry, routes, middleware |
+| `go-api/pkg/hal/interface.go` | `HardwareDriver` interface definition |
+| `go-api/pkg/hal/factory.go` | Backend selection logic (c/rust/auto) |
+| `go-api/pkg/hal/hal_test.go` | Unit tests using mock driver |
+| `go-api/pkg/hal/c/driver.go` | CGO bindings to C library |
+| `go-api/pkg/hal/rust/driver.go` | FFI bindings to Rust library |
+| `go-api/pkg/hal/mock/driver.go` | Test mock — no hardware needed |
+| `c-lib/include/` | C headers for all hardware interfaces |
+| `rust-lib/src/lib.rs` | Rust FFI exports |
+| `.drone.yml` | 7 CI/CD pipelines |
+
+## Dependencies
+
+**Go** (`go-api/go.mod`): `gorilla/mux`, `spf13/cobra`, `spf13/viper`, `charmbracelet/bubbletea`, `fyne.io/fyne/v2`
+
+**Rust** (`rust-lib/Cargo.toml`): `linux-embedded-hal`, `bme280`, `serialport`, `spidev`, `cbindgen`
+
+## Prerequisites
+
+```bash
+# ARM cross-compiler
+sudo apt install gcc-arm-linux-gnueabihf make
+
+# Rust cross-compilation
+cargo install cross cbindgen
+
+# Python tests
+pip3 install pytest requests pytest-json-report
+```
+
+## Code Style
+
+- Go formatting: `gofmt -w .`
+- Commit format: `type(scope): description` (feat, fix, docs, test, refactor, ci)
