@@ -4,12 +4,45 @@ Erzeugt: HTML Dashboard, JSON Export, Markdown Report, PDF Report
 """
 import json
 import os
+import sys
+import argparse
 from datetime import datetime
 from collections import defaultdict
 
+# ── CLI-Argumente ──────────────────────────
+_parser = argparse.ArgumentParser(description="BeagleBone Black Report Generator")
+_parser.add_argument("--output", default="/mnt/user-data/outputs",
+                     help="Ausgabeverzeichnis (default: /mnt/user-data/outputs)")
+_parser.add_argument("--trend", default=None,
+                     help="Pfad zur test_trend.json Datei (optional)")
+_parser.add_argument("--requirements", default=None,
+                     help="Pfad zur requirements.json (default: neben diesem Script)")
+_args, _unknown = _parser.parse_known_args()
+
+OUTPUT_DIR   = _args.output
+TREND_FILE   = _args.trend
+REQUIREMENTS = _args.requirements or os.path.join(
+    os.path.dirname(__file__) or ".", "requirements.json")
+
 # ── Daten laden ──────────────────────────
-with open("/home/claude/reports/requirements.json") as f:
+req_path = REQUIREMENTS if os.path.exists(REQUIREMENTS) \
+    else "/home/claude/reports/requirements.json"
+with open(req_path) as f:
     data = json.load(f)
+
+# ── Trend-Daten laden (optional) ──────────
+TREND_DATA = []
+_trend_sources = [
+    TREND_FILE,
+    os.path.join(os.path.dirname(__file__) or ".", "test_trend.json"),
+    "/trend/test_trend.json",
+]
+for _ts in _trend_sources:
+    if _ts and os.path.exists(_ts):
+        with open(_ts) as _f:
+            TREND_DATA = json.load(_f)
+        print(f"📈 Trend-Daten geladen: {_ts} ({len(TREND_DATA)} Einträge)")
+        break
 
 DATUM     = datetime.now().strftime("%d.%m.%Y %H:%M")
 PROJEKT   = data["projekt"]
@@ -70,7 +103,7 @@ def generate_json():
         "test_ergebnisse": TESTS,
         "tracing": generate_tracing_data()
     }
-    path = "/mnt/user-data/outputs/bb_report.json"
+    path = os.path.join(OUTPUT_DIR, "bb_report.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump(export, f, ensure_ascii=False, indent=2)
     print(f"✅ JSON Export: {path}")
@@ -208,7 +241,7 @@ def generate_markdown():
         lines.append(
             f"| {kat['name']} | {avg:.1f}% | {icon} |")
 
-    path = "/mnt/user-data/outputs/bb_report.md"
+    path = os.path.join(OUTPUT_DIR, "bb_report.md")
     with open(path, "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
     print(f"✅ Markdown Report: {path}")
@@ -333,6 +366,225 @@ def generate_html():
             {t['dauer_ms']} ms</td>
         </tr>"""
 
+    # ── Trend-Tab Daten aufbereiten ──────────
+    def _fmt_date(ts):
+        try:
+            return datetime.fromisoformat(ts).strftime("%d.%m.%y")
+        except Exception:
+            return ts[:10]
+
+    if TREND_DATA:
+        trend_labels    = json.dumps([_fmt_date(e["timestamp"]) for e in TREND_DATA])
+        trend_success   = json.dumps([e.get("erfolgsrate", 0) for e in TREND_DATA])
+        trend_coverage  = json.dumps([e.get("avg_coverage", 0) for e in TREND_DATA])
+        trend_total     = json.dumps([e.get("total_tests", 0) for e in TREND_DATA])
+        trend_builds    = json.dumps([f"#{e.get('build','?')} {e.get('commit','')[:7]}" for e in TREND_DATA])
+        last  = TREND_DATA[-1]
+        first = TREND_DATA[0]
+        trend_delta_success  = round(last.get("erfolgsrate",0)  - first.get("erfolgsrate",0),  1)
+        trend_delta_coverage = round(last.get("avg_coverage",0) - first.get("avg_coverage",0), 1)
+        trend_delta_tests    = last.get("total_tests",0) - first.get("total_tests",0)
+        def _delta_html(val, unit=""):
+            color = "#22c55e" if val >= 0 else "#ef4444"
+            arrow = "▲" if val >= 0 else "▼"
+            sign  = "+" if val >= 0 else ""
+            return f'<span style="color:{color};font-size:0.8rem">{arrow} {sign}{val}{unit}</span>'
+        trend_delta_html_s = _delta_html(trend_delta_success, "%")
+        trend_delta_html_c = _delta_html(trend_delta_coverage, "%")
+        trend_delta_html_t = _delta_html(trend_delta_tests)
+        trend_pane = f"""
+  <!-- Trend -->
+  <div id="pane-trend" class="pane">
+    <div class="section" style="margin-bottom:1rem">
+      <h3>📉 Trend über {len(TREND_DATA)} Builds
+        <span style="font-weight:400;font-size:0.8rem;color:#64748b;margin-left:0.5rem">
+          ({_fmt_date(TREND_DATA[0]["timestamp"])} – {_fmt_date(TREND_DATA[-1]["timestamp"])})
+        </span>
+      </h3>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:1rem">
+        <div style="background:#0f172a;border-radius:8px;padding:1rem;text-align:center">
+          <div style="font-size:1.6rem;font-weight:800;color:#22c55e">
+            {last.get("erfolgsrate",0)}%</div>
+          <div style="font-size:0.75rem;color:#64748b;margin-top:2px">Erfolgsrate {trend_delta_html_s}</div>
+        </div>
+        <div style="background:#0f172a;border-radius:8px;padding:1rem;text-align:center">
+          <div style="font-size:1.6rem;font-weight:800;color:#a78bfa">
+            {last.get("avg_coverage",0)}%</div>
+          <div style="font-size:0.75rem;color:#64748b;margin-top:2px">Ø Coverage {trend_delta_html_c}</div>
+        </div>
+        <div style="background:#0f172a;border-radius:8px;padding:1rem;text-align:center">
+          <div style="font-size:1.6rem;font-weight:800;color:#3b82f6">
+            {last.get("total_tests",0)}</div>
+          <div style="font-size:0.75rem;color:#64748b;margin-top:2px">Tests Gesamt {trend_delta_html_t}</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem">
+      <div class="section">
+        <h3 style="margin-bottom:1rem">✅ Erfolgsrate (%)</h3>
+        <canvas id="chartSuccess" height="180"></canvas>
+      </div>
+      <div class="section">
+        <h3 style="margin-bottom:1rem">🛡️ Code Coverage (%)</h3>
+        <canvas id="chartCoverage" height="180"></canvas>
+      </div>
+    </div>
+    <div class="section">
+      <h3 style="margin-bottom:1rem">🧪 Test-Anzahl</h3>
+      <canvas id="chartTests" height="120"></canvas>
+    </div>
+    <div class="section" style="margin-top:1.5rem">
+      <h3 style="margin-bottom:0.75rem">Build History</h3>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr>
+            <th>Build</th><th>Datum</th><th>Branch</th>
+            <th>Tests</th><th>Erfolgsrate</th><th>Coverage</th>
+          </tr></thead>
+          <tbody>
+            {"".join(f'''<tr>
+              <td style="padding:8px 12px;font-family:monospace;color:#3b82f6">
+                #{e.get("build","?")} <span style="color:#475569;font-size:0.75rem">{e.get("commit","")[:7]}</span></td>
+              <td style="padding:8px 12px;color:#94a3b8;font-size:0.85rem">{_fmt_date(e["timestamp"])}</td>
+              <td style="padding:8px 12px;color:#64748b;font-size:0.85rem">{e.get("branch","main")}</td>
+              <td style="padding:8px 12px">{e.get("total_tests",0)}</td>
+              <td style="padding:8px 12px;color:{"#22c55e" if e.get("erfolgsrate",0)>=90 else "#f59e0b" if e.get("erfolgsrate",0)>=75 else "#ef4444"};font-weight:600">
+                {e.get("erfolgsrate",0)}%</td>
+              <td style="padding:8px 12px;color:{"#22c55e" if e.get("avg_coverage",0)>=90 else "#a78bfa" if e.get("avg_coverage",0)>=75 else "#f59e0b"}">
+                {e.get("avg_coverage",0)}%</td>
+            </tr>''' for e in reversed(TREND_DATA))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+(function(){{
+  var labels   = {trend_labels};
+  var builds   = {trend_builds};
+  var success  = {trend_success};
+  var coverage = {trend_coverage};
+  var total    = {trend_total};
+  var tip = {{
+    callbacks: {{
+      title: function(ctx) {{ return builds[ctx[0].dataIndex]; }},
+    }}
+  }};
+  var gridColor = 'rgba(51,65,85,0.6)';
+  var baseOpts = {{
+    responsive: true,
+    plugins: {{ legend: {{ display: false }}, tooltip: tip }},
+    scales: {{
+      x: {{ ticks: {{ color:'#64748b', font:{{size:11}} }}, grid: {{ color:gridColor }} }},
+      y: {{ ticks: {{ color:'#94a3b8', font:{{size:11}} }}, grid: {{ color:gridColor }} }}
+    }}
+  }};
+  function line(id, data, color, min, max) {{
+    var ctx = document.getElementById(id);
+    if (!ctx) return;
+    new Chart(ctx, {{
+      type: 'line',
+      data: {{
+        labels: labels,
+        datasets: [{{
+          data: data,
+          borderColor: color,
+          backgroundColor: color + '22',
+          borderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          tension: 0.3,
+          fill: true
+        }}]
+      }},
+      options: Object.assign({{}}, baseOpts, {{
+        scales: Object.assign({{}}, baseOpts.scales, {{
+          y: Object.assign({{}}, baseOpts.scales.y, {{
+            min: min, max: max
+          }})
+        }})
+      }})
+    }});
+  }}
+  function bar(id, data, color) {{
+    var ctx = document.getElementById(id);
+    if (!ctx) return;
+    new Chart(ctx, {{
+      type: 'bar',
+      data: {{
+        labels: labels,
+        datasets: [{{
+          data: data,
+          backgroundColor: color + '99',
+          borderColor: color,
+          borderWidth: 1,
+          borderRadius: 4
+        }}]
+      }},
+      options: baseOpts
+    }});
+  }}
+  // Referenzlinien für Quality Gates
+  function lineWithGate(id, data, color, gate, min, max) {{
+    var ctx = document.getElementById(id);
+    if (!ctx) return;
+    new Chart(ctx, {{
+      type: 'line',
+      data: {{
+        labels: labels,
+        datasets: [
+          {{
+            label: 'Wert',
+            data: data,
+            borderColor: color,
+            backgroundColor: color + '22',
+            borderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            tension: 0.3,
+            fill: true
+          }},
+          {{
+            label: 'Quality Gate (' + gate + '%)',
+            data: labels.map(function() {{ return gate; }}),
+            borderColor: '#ef444466',
+            borderWidth: 1,
+            borderDash: [6,4],
+            pointRadius: 0,
+            fill: false
+          }}
+        ]
+      }},
+      options: Object.assign({{}}, baseOpts, {{
+        plugins: Object.assign({{}}, baseOpts.plugins, {{
+          legend: {{ display: true, labels: {{ color:'#64748b', font:{{size:11}} }} }}
+        }}),
+        scales: Object.assign({{}}, baseOpts.scales, {{
+          y: Object.assign({{}}, baseOpts.scales.y, {{ min: min, max: max }})
+        }})
+      }})
+    }});
+  }}
+  lineWithGate('chartSuccess',  success,  '#22c55e', 90, 60, 102);
+  lineWithGate('chartCoverage', coverage, '#a78bfa', 75, 60, 102);
+  bar('chartTests', total, '#3b82f6');
+}})();
+</script>"""
+    else:
+        trend_pane = """
+  <!-- Trend -->
+  <div id="pane-trend" class="pane">
+    <div class="section" style="text-align:center;padding:3rem">
+      <div style="font-size:3rem">📉</div>
+      <h3 style="margin:1rem 0 0.5rem">Noch keine Trend-Daten vorhanden</h3>
+      <p style="color:#64748b;font-size:0.9rem">
+        Trend-Daten werden nach dem ersten CI-Build unter
+        <code>/trend/test_trend.json</code> gespeichert.
+      </p>
+    </div>
+  </div>"""
+
     html = f"""<!DOCTYPE html>
 <html lang="de">
 <head>
@@ -449,6 +701,8 @@ def generate_html():
       🧪 Test Ergebnisse</div>
     <div class="tab" onclick="showTab('coverage')">
       📈 Code Coverage</div>
+    <div class="tab" onclick="showTab('trend')">
+      📉 Trend</div>
   </div>
 
   <!-- Übersicht -->
@@ -493,6 +747,8 @@ def generate_html():
     </div>
   </div>
 
+  {trend_pane}
+
   <!-- Coverage -->
   <div id="pane-coverage" class="pane">
     <div class="section">
@@ -528,8 +784,8 @@ def generate_html():
 
 <script>
 function showTab(name) {{
+  const names = ['overview','tracing','tests','coverage','trend'];
   document.querySelectorAll('.tab').forEach((t,i) => {{
-    const names = ['overview','tracing','tests','coverage'];
     t.classList.toggle('active', names[i] === name);
   }});
   document.querySelectorAll('.pane').forEach(p => {{
@@ -541,7 +797,7 @@ function showTab(name) {{
 </body>
 </html>"""
 
-    path = "/mnt/user-data/outputs/bb_dashboard.html"
+    path = os.path.join(OUTPUT_DIR, "bb_dashboard.html")
     with open(path, "w", encoding="utf-8") as f:
         f.write(html)
     print(f"✅ HTML Dashboard: {path}")
@@ -559,7 +815,7 @@ def generate_pdf():
         TableStyle, HRFlowable, PageBreak)
     from reportlab.lib.enums import TA_CENTER, TA_LEFT
 
-    path = "/mnt/user-data/outputs/bb_report.pdf"
+    path = os.path.join(OUTPUT_DIR, "bb_report.pdf")
     doc  = SimpleDocTemplate(
         path, pagesize=A4,
         topMargin=2*cm, bottomMargin=2*cm,
@@ -832,7 +1088,7 @@ def generate_pdf():
 # Main
 # ════════════════════════════════════════
 if __name__ == "__main__":
-    os.makedirs("/mnt/user-data/outputs", exist_ok=True)
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
     print(f"\n📊 Generiere Reports für: {PROJEKT} v{VERSION}")
     print(f"   {STATS['total_reqs']} Requirements | "
           f"{STATS['total_tests']} Tests\n")

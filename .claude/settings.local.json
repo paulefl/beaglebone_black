@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(go mod:*)",
+      "Bash(go vet:*)",
+      "Read(//usr/local/go/bin/**)",
+      "Read(//usr/**)",
+      "Bash(bash /home/coder/project/beaglebone_black/scripts/setup-dev.sh arm 2>&1)",
+      "Bash(bash scripts/test.sh -ci 2>&1)",
+      "Bash(bash /home/coder/project/beaglebone_black/scripts/test.sh -ci)",
+      "Bash(make lint:*)",
+      "Bash(gofmt:*)",
+      "Bash(make test-python:*)",
+      "Bash(pip install:*)",
+      "Bash(chmod:*)",
+      "Bash(make test-report:*)",
+      "Bash(bash -x scripts/report.sh)",
+      "Bash(find /home/coder/project/beaglebone_black -name *_test.go -o -name test_*.py -o -name *.test.js)",
+      "Bash(ls /home/coder/project/beaglebone_black/scripts/*.sh)",
+      "Bash(GITHUB_STEP_SUMMARY=/tmp/test-summary.md make test-report)",
+      "Bash(find /home/coder/project/beaglebone_black -type d -not -path */.*)",
+      "Bash(python3:*)",
+      "Bash(git stash:*)",
+      "Bash(git rm:*)"
+    ]
+  }
+}

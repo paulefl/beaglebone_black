@@ -30,6 +30,8 @@ htmlcov/
 reports/*.json
 reports/*.out
 reports/*.html
+reports/*.pdf
+reports/*.md
 reports/shell-syntax.txt
 reports/output/
 arch/.cache/
