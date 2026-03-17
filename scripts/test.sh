@@ -54,7 +54,13 @@ run_tests() {
     local args=("-v" "-count=1" "-timeout=60s")
 
     $MODE_RACE  && args+=("-race" "-count=3")
-    $MODE_COVER && args+=("-coverprofile=$COVERAGE_OUT" "-covermode=atomic")
+    # -coverpkg misst Coverage auch in importierten Packages (z.B. mock/driver.go
+    # wird von hal_test.go aufgerufen — ohne -coverpkg zeigt es 0%)
+    $MODE_COVER && args+=(
+        "-coverprofile=$COVERAGE_OUT"
+        "-covermode=atomic"
+        "-coverpkg=./pkg/hal/,./pkg/hal/mock/,./pkg/hal/config/"
+    )
 
     # pkg/hal/c und pkg/hal/rust benötigen native C-Header (bme280.h, hardware_rs.h)
     # und die kompilierten Shared Libraries — nicht verfügbar in der Dev-Umgebung.
@@ -102,7 +108,7 @@ check_coverage() {
 
     if $MODE_CI; then
         # Quality Gate: Durchschnitt
-        if (( $(echo "$total >= $MIN_COVERAGE_AVG" | bc -l) )); then
+        if awk "BEGIN{exit !($total >= $MIN_COVERAGE_AVG)}"; then
             success "Coverage Gate: ${total}% >= ${MIN_COVERAGE_AVG}% ✓"
         else
             fail "Coverage Gate: ${total}% < ${MIN_COVERAGE_AVG}% (Minimum)"
@@ -112,11 +118,10 @@ check_coverage() {
         # Quality Gate: pro Datei
         local failed_files=0
         while IFS= read -r line; do
-            local pct
+            local pct file
             pct=$(echo "$line" | awk '{print $3}' | tr -d '%')
-            local file
             file=$(echo "$line" | awk '{print $1}')
-            if (( $(echo "$pct < $MIN_COVERAGE_FILE" | bc -l) )); then
+            if awk "BEGIN{exit !($pct < $MIN_COVERAGE_FILE)}"; then
                 warn "Unter Minimum: $file → ${pct}% < ${MIN_COVERAGE_FILE}%"
                 ((failed_files++))
             fi

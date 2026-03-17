@@ -81,7 +81,47 @@ func TestInterface_Compliance(t *testing.T) {
 	var _ hal.HardwareDriver = (*mock.MockDriver)(nil)
 }
 
-// ── Fallback ────────────────────────────────────────────
+// ── Driver Metadaten ─────────────────────────────────────────────────────────
+func TestDriver_Name(t *testing.T) {
+	d := setupMock(t)
+	if d.Name() == "" { t.Error("Name() sollte nicht leer sein") }
+}
+func TestDriver_Backend(t *testing.T) {
+	d := setupMock(t)
+	if d.Backend() == "" { t.Error("Backend() sollte nicht leer sein") }
+}
+func TestDriver_Close(t *testing.T) {
+	d := setupMock(t)
+	d.Close()
+	if !d.WasCalled("Close") { t.Error("Close wurde nicht aufgerufen") }
+}
+
+// ── GPIO SetDirection ────────────────────────────────────────────────────────
+func TestGPIO_SetDirection(t *testing.T) {
+	d := setupMock(t)
+	if err := d.GPIOSetDirection(60, true); err != nil { t.Errorf("SetDirection out: %v", err) }
+	if err := d.GPIOSetDirection(60, false); err != nil { t.Errorf("SetDirection in: %v", err) }
+	if !d.WasCalled("GPIOSetDir(60,true)") { t.Error("GPIOSetDir nicht aufgerufen") }
+}
+
+// ── UART Close ───────────────────────────────────────────────────────────────
+func TestUART_Close(t *testing.T) {
+	d := setupMock(t)
+	d.UARTClose()
+	if !d.WasCalled("UARTClose") { t.Error("UARTClose wurde nicht aufgerufen") }
+}
+
+// ── Mock Reset ───────────────────────────────────────────────────────────────
+func TestMock_Reset(t *testing.T) {
+	d := setupMock(t)
+	d.BME280Read()
+	d.Reset()
+	if len(d.Calls) != 0 { t.Errorf("Calls nach Reset nicht leer: %v", d.Calls) }
+	if d.WasCalled("BME280Read") { t.Error("WasCalled nach Reset sollte false sein") }
+}
+
+
+// ── Fallback ────────────────────────────────────────────────────────────────
 func TestFallback_PrimaerFehler(t *testing.T) {
 	primary   := mock.New(); primary.Init()
 	secondary := mock.New(); secondary.Init()
