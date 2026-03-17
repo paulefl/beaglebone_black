@@ -225,7 +225,7 @@ def load_json(path):
         return None
 
 def outcome_icon(o):
-    return {"passed": "✅", "failed": "❌", "skipped": "⏭"}.get(o, "❓")
+    return {"passed": "✅", "pass": "✅", "failed": "❌", "fail": "❌", "skipped": "⏭", "skip": "⏭"}.get(o, "❓")
 
 def summary_icon(p, f, s):
     if f > 0:   return "❌"
