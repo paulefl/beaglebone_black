@@ -105,6 +105,29 @@ install_rust() {
     fi
 }
 
+# ── GitHub CLI ────────────────────────────────────────────────────────────────
+install_gh() {
+    if command -v gh &>/dev/null; then
+        success "GitHub CLI bereits installiert ($(gh --version | head -1))"
+        return
+    fi
+    log "Installiere GitHub CLI..."
+    sudo apt-get update -qq
+    sudo apt-get install -y --no-install-recommends curl gpg
+    curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+        | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+    sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] \
+https://cli.github.com/packages stable main" \
+        | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+    sudo apt-get update -qq
+    sudo apt-get install -y --no-install-recommends gh
+    success "GitHub CLI $(gh --version | head -1) installiert"
+    echo ""
+    warn "Noch nicht eingeloggt — jetzt authentifizieren mit:"
+    echo "  gh auth login"
+}
+
 # ── Python Test-Dependencies ──────────────────────────────────────────────────
 install_python_deps() {
     log "Installiere Python Test-Dependencies..."
@@ -144,6 +167,7 @@ main() {
             install_arm_toolchain
             install_rust
             install_python_deps
+            install_gh
             go_mod_tidy
             verify
             ;;
@@ -151,16 +175,18 @@ main() {
         arm)          install_arm_toolchain ;;
         rust)         install_rust ;;
         python)       install_python_deps ;;
+        gh)           install_gh ;;
         tidy)         go_mod_tidy ;;
         verify)       verify ;;
         *)
-            echo "Verwendung: $0 [all|go|arm|rust|python|tidy|verify]"
+            echo "Verwendung: $0 [all|go|arm|rust|python|gh|tidy|verify]"
             echo ""
             echo "  all     — Alles installieren (Standard)"
             echo "  go      — Go $GO_VERSION + go mod tidy"
             echo "  arm     — ARM Cross-Compiler"
             echo "  rust    — Rust + cross + cbindgen"
             echo "  python  — pytest + pytest-timeout + pytest-json-report + requests"
+            echo "  gh      — GitHub CLI (gh)"
             echo "  tidy    — Nur go mod tidy"
             echo "  verify  — go vet + Tests"
             exit 1
