@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.1.0] — unreleased (next)
 
 ### Added
+- SonarCloud Integration: `sonar-project.properties`, Go JUnit XML + Cobertura Coverage, Python JUnit XML + Coverage XML, `sonarcloud` CI Job (#47)
 - Bausteinsicht via Podman Container: `scripts/bausteinsicht-container.sh` + CI Workflow `bausteinsicht.yml` (#45)
 - GitHub Pages Smoke-Test nach Deploy — prüft HTTP 200 auf Pages-URL (#40)
 - Automatisierter Release-Workflow via `workflow_dispatch` mit bump-Input (patch/minor/major) (#43)
