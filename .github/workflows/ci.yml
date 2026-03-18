@@ -193,18 +193,39 @@ jobs:
         if: steps.check-chrome.outputs.available == 'false'
         run: sudo apt-get install -y --no-install-recommends chromium-driver
 
-      - name: StrictDoc HTML + PDF Export
+      - name: StrictDoc HTML + PDF + Excel + ReqIF Export
         run: make req-tracing
 
       - name: Traceability Report in Workflow Summary schreiben
         if: always()
         run: python3 scripts/req_tracing_summary.py
 
-      - name: Upload StrictDoc HTML + PDF
+      - name: Upload StrictDoc HTML (GitHub Pages)
         uses: actions/upload-artifact@v7
         with:
           name: strictdoc-html
           path: output/strictdoc/html/
+          retention-days: 30
+
+      - name: Upload StrictDoc PDF
+        uses: actions/upload-artifact@v7
+        with:
+          name: strictdoc-pdf
+          path: output/strictdoc/pdf/
+          retention-days: 30
+
+      - name: Upload StrictDoc Excel
+        uses: actions/upload-artifact@v7
+        with:
+          name: strictdoc-excel
+          path: output/strictdoc/excel/
+          retention-days: 30
+
+      - name: Upload StrictDoc ReqIF
+        uses: actions/upload-artifact@v7
+        with:
+          name: strictdoc-reqif
+          path: output/strictdoc/reqif/
           retention-days: 30
 
   # ── Test Report + Trend ───────────────────────
@@ -367,6 +388,27 @@ jobs:
         with:
           name: strictdoc-html
           path: reports/strictdoc/
+
+      - name: StrictDoc PDF laden
+        if: github.ref == 'refs/heads/main'
+        uses: actions/download-artifact@v8
+        with:
+          name: strictdoc-pdf
+          path: reports/strictdoc/pdf/
+
+      - name: StrictDoc Excel laden
+        if: github.ref == 'refs/heads/main'
+        uses: actions/download-artifact@v8
+        with:
+          name: strictdoc-excel
+          path: reports/strictdoc/excel/
+
+      - name: StrictDoc ReqIF laden
+        if: github.ref == 'refs/heads/main'
+        uses: actions/download-artifact@v8
+        with:
+          name: strictdoc-reqif
+          path: reports/strictdoc/reqif/
 
       - name: GitHub Pages vorbereiten
         if: github.ref == 'refs/heads/main'

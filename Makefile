@@ -52,8 +52,10 @@ deploy:
 	ssh debian@192.168.7.2 "systemctl restart embedded-sw"
 
 req-tracing:
-	strictdoc --debug export . --formats html    --output-dir output/strictdoc
+	strictdoc --debug export . --formats html     --output-dir output/strictdoc
 	strictdoc --debug export . --formats html2pdf --output-dir output/strictdoc
+	strictdoc --debug export . --formats excel    --output-dir output/strictdoc
+	strictdoc --debug export . --formats reqif    --output-dir output/strictdoc
 	python3 scripts/req_tracing_summary.py
 
 clean:
