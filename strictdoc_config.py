@@ -10,6 +10,7 @@ def create_config():
             "go-api/",
             "c-lib/",
             "rust-lib/",
+            "tests/",
         ],
         project_features=[
             "HTML2PDF",
