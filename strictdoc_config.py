@@ -4,6 +4,7 @@ from strictdoc.core.project_config import ProjectConfig
 def create_config():
     return ProjectConfig(
         project_title="BeagleBone Black Embedded SW",
+        include_doc_paths=["docs/requirements"],
         project_features=[
             "HTML2PDF",
             "TRACEABILITY_SCREEN",

@@ -194,7 +194,7 @@ jobs:
         run: sudo apt-get install -y --no-install-recommends chromium-driver
 
       - name: HTML Export generieren
-        run: strictdoc export . --formats html --output-dir output/strictdoc
+        run: strictdoc --debug export . --formats html --output-dir output/strictdoc
 
       - name: PDF Export generieren (html2pdf)
         run: strictdoc --debug export docs/requirements/ --formats html2pdf --output-dir output/strictdoc
