@@ -30,7 +30,7 @@ Falls ein Test Plan  oder Akkeptanz kriterien im Issue verfügbar sind dann verf
 
 Wenn du danach der Meinung bist dass alles passt dann frage nach ob der User es auch so sieht und wenn ja dann führe folgende steps aus
 * Push
-* Erstelle einen PR
+* Erstelle einen PR und konfiguriere ihn so dass er dich informiert wenn fertig ist
 * Falls ein Akkeptenzkriterium der erfolgreiche PR run ist dann prüfe dies auch
  
 
