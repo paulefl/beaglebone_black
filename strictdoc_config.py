@@ -5,6 +5,12 @@ def create_config():
     return ProjectConfig(
         project_title="BeagleBone Black Embedded SW",
         include_doc_paths=["docs/requirements"],
+        # Nur Quellcode-Verzeichnisse für Source-Traceability scannen
+        include_source_paths=[
+            "go-api/",
+            "c-lib/",
+            "rust-lib/",
+        ],
         project_features=[
             "HTML2PDF",
             "TRACEABILITY_SCREEN",
