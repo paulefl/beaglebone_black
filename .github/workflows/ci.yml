@@ -525,7 +525,7 @@ jobs:
       - name: Pages Smoke-Test
         if: github.ref == 'refs/heads/main'
         run: |
-          sleep 15
+          sleep 30
           URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL")
           if [ "$STATUS" != "200" ]; then
@@ -552,7 +552,6 @@ jobs:
           config: cliff.toml
           args: --unreleased --prepend CHANGELOG.md
         env:
-          OUTPUT: CHANGELOG.md
           GITHUB_REPO: ${{ github.repository }}
 
       - name: Commit updated CHANGELOG.md
