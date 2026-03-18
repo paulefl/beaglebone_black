@@ -23,6 +23,14 @@ jobs:
       - name: Make bausteinsicht binary executable
         run: chmod +x scripts/bausteinsicht
 
+      - name: Install draw.io CLI and Xvfb
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y xvfb libgbm1 libasound2t64
+          DRAWIO_VERSION=$(curl -s https://api.github.com/repos/jgraph/drawio-desktop/releases/latest | jq -r '.tag_name' | tr -d 'v')
+          wget -q "https://github.com/jgraph/drawio-desktop/releases/download/v${DRAWIO_VERSION}/drawio-amd64-${DRAWIO_VERSION}.deb"
+          sudo apt-get install -y "./drawio-amd64-${DRAWIO_VERSION}.deb"
+
       - name: Validate model
         run: scripts/bausteinsicht validate --model arch/model/beaglebone_black.jsonc
 
@@ -52,10 +60,11 @@ jobs:
             --output arch/model/export/table
 
       - name: Export PNG diagrams
-        continue-on-error: true  # draw.io requires Xvfb/GPU
         run: |
           mkdir -p arch/model/export/png
-          scripts/bausteinsicht export \
+          sudo mkdir -p /run/dbus
+          sudo dbus-daemon --system --fork 2>/dev/null || true
+          xvfb-run -a scripts/bausteinsicht export \
             --model arch/model/beaglebone_black.jsonc \
             --output arch/model/export/png
 
