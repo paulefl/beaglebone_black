@@ -26,14 +26,38 @@ Hinterfrage ob der Plan noch sinn macht bzw optimierungsfähig ist nach jeder Ph
 
 ### 3. Ende
 
-Falls ein Test Plan  oder Akkeptanz kriterien im Issue verfügbar sind dann verfiziere diese und mache solange weiter bis sie verfiziert sind oder frage nach.
+Falls ein Test Plan oder Akkeptanzkriterien im Issue verfügbar sind dann verifiziere diese und mache solange weiter bis sie verifiziert sind oder frage nach.
 
-Wenn du danach der Meinung bist dass alles passt dann frage nach ob der User es auch so sieht und wenn ja dann führe folgende steps aus
+Wenn du danach der Meinung bist dass alles passt dann frage nach ob der User es auch so sieht und wenn ja dann führe folgende steps aus:
+
 * Push
-* Erstelle einen PR und konfiguriere ihn so dass er dich informiert wenn fertig ist
-* Falls ein Akkeptenzkriterium der erfolgreiche PR run ist dann prüfe dies auch
+* Erstelle einen PR
 
-* Nach Pr merge switch zum main und pull 
+* **Warte auf den CI-Run im Hintergrund:**
+  Prüfe mit `gh run list --branch <branch> --limit 5` ob ein Run gestartet wurde.
+  Starte dann das Warten als Hintergrund-Task (run_in_background: true):
+  ```
+  gh run watch <run-id>
+  ```
+  Claude wird automatisch benachrichtigt sobald der Run abgeschlossen ist — kein Blockieren nötig.
+
+* **Prüfe das Ergebnis:**
+  ```
+  gh run view <run-id>
+  ```
+  - Falls der Run **fehlgeschlagen** ist: Lies die Logs (`gh run view <run-id> --log-failed`), behebe die Fehler, commite und pushe erneut — dann wieder ab "Warte auf den CI-Run".
+  - Falls der Run **erfolgreich** ist: Informiere den User mit einer kurzen Zusammenfassung der bestandenen Checks.
+
+* **Merge nur nach erfolgreichem Run:**
+  Merge den PR erst wenn `gh run view` den Status `completed` und conclusion `success` zeigt:
+  ```
+  gh pr merge <pr-number> --squash --delete-branch
+  ```
+
+* Nach dem Merge: switch zu main und pull
+  ```
+  git checkout main && git pull
+  ```
  
 
 
