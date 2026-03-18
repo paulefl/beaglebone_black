@@ -103,10 +103,12 @@ run_pytest_suite() {
 
     section_header "$title"
 
+    local junit_file="${report_file%.json}.pytest.junit.xml"
     pytest "$dir" \
         --timeout=10 \
         --json-report \
         --json-report-file="$report_file" \
+        --junit-xml="$junit_file" \
         -q 2>&1 || true
 
     if [[ ! -f "$report_file" ]]; then

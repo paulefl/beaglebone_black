@@ -177,8 +177,14 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: StrictDoc installieren
-        run: pip install strictdoc --quiet
+      - name: Python-Abhängigkeiten installieren
+        run: pip install strictdoc --quiet && pip install -r tests/requirements-dev.txt --quiet
+
+      - name: Pytest JUnit XML erzeugen (für StrictDoc Test-Traceability)
+        run: |
+          mkdir -p reports
+          pytest tests/api/ --timeout=10 \
+            --junit-xml=reports/pytest-api.pytest.junit.xml -q 2>&1 || true
 
       - name: Chromedriver verfügbar prüfen
         id: check-chrome
@@ -225,7 +231,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: strictdoc-reqif
-          path: output/strictdoc/reqif/
+          path: output/strictdoc/reqif-sdoc/
           retention-days: 30
 
   # ── Test Report + Trend ───────────────────────
@@ -408,7 +414,7 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: strictdoc-reqif
-          path: reports/strictdoc/reqif/
+          path: reports/strictdoc/reqif-sdoc/
 
       - name: GitHub Pages vorbereiten
         if: github.ref == 'refs/heads/main'

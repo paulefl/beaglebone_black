@@ -4,7 +4,7 @@ from strictdoc.core.project_config import ProjectConfig
 def create_config():
     return ProjectConfig(
         project_title="BeagleBone Black Embedded SW",
-        include_doc_paths=["docs/requirements"],
+        include_doc_paths=["docs/requirements", "reports"],
         # Nur Quellcode-Verzeichnisse für Source-Traceability scannen
         include_source_paths=[
             "go-api/",
