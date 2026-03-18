@@ -496,11 +496,23 @@ jobs:
           cd bin
           sha256sum * > checksums.sha256
           cat checksums.sha256
+      - name: Version aus Makefile lesen
+        id: version
+        run: echo "version=$(make version)" >> $GITHUB_OUTPUT
+
+      - name: Changelog-Section für Release extrahieren
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          # Extract section between [VERSION] and the next [
+          awk "/^## \[${VERSION}\]/{found=1; next} found && /^## \[/{exit} found{print}" CHANGELOG.md > release_notes.md
+          echo "Release notes for v${VERSION}:"
+          cat release_notes.md
+
       - uses: softprops/action-gh-release@v2
         with:
           files: |
             bin/bbcli-*
             bin/bbtui-*
             bin/checksums.sha256
-          body_path: CHANGELOG.md
-          generate_release_notes: true
+          body_path: release_notes.md
+          name: "v${{ steps.version.outputs.version }}"
