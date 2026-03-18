@@ -177,16 +177,26 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: System-Abhängigkeiten für PDF installieren
-        run: sudo apt-get install -y --no-install-recommends libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz0b libfontconfig1
-
       - name: StrictDoc installieren
-        run: pip install "strictdoc[pdf]" --quiet
+        run: pip install strictdoc --quiet
+
+      - name: Chromedriver verfügbar prüfen
+        id: check-chrome
+        run: |
+          if command -v chromedriver &>/dev/null; then
+            echo "available=true" >> $GITHUB_OUTPUT
+          else
+            echo "available=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Chromium installieren
+        if: steps.check-chrome.outputs.available == 'false'
+        run: sudo apt-get install -y --no-install-recommends chromium-driver
 
       - name: HTML Export generieren
         run: strictdoc export docs/requirements/ --formats html --output-dir output/strictdoc
 
-      - name: PDF Export generieren
+      - name: PDF Export generieren (html2pdf)
         run: strictdoc export docs/requirements/ --formats html2pdf --output-dir output/strictdoc
 
       - name: Upload StrictDoc HTML + PDF

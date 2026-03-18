@@ -682,8 +682,8 @@ PYEOF
       - name: report-workspace
         path: /workspace
     commands:
-      - apt-get update -qq && apt-get install -y --no-install-recommends libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz0b libfontconfig1 2>/dev/null
-      - pip install "strictdoc[pdf]" --quiet
+      - pip install strictdoc --quiet
+      - command -v chromedriver || apt-get install -y --no-install-recommends chromium-driver 2>/dev/null
       - strictdoc export docs/requirements/ --formats html --output-dir /workspace/strictdoc
       - strictdoc export docs/requirements/ --formats html2pdf --output-dir /workspace/strictdoc
       - find /workspace/strictdoc -name "*.html" -o -name "*.pdf" | sort
