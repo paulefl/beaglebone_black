@@ -1,7 +1,8 @@
 #!/bin/bash
 # bausteinsicht-container.sh — run Bausteinsicht via Podman container
-# Clones https://github.com/docToolchain/Bausteinsicht.git, builds the image,
-# and runs it with the project model file mounted.
+# Usage:
+#   $0 build               — clone repo and build container image
+#   $0 <command> [args...] — run bausteinsicht in the container
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -15,27 +16,37 @@ MODEL_IN_CONTAINER="/model/$(basename "$MODEL")"
 CMD="${1:-}"
 
 if [[ -z "$CMD" ]]; then
-  echo "Usage: $0 <command> [args...]"
-  echo "Example: $0 validate"
+  echo "Usage: $0 build"
+  echo "       $0 <command> [args...]"
+  echo "Example: $0 build"
+  echo "         $0 validate"
   echo "         $0 export --output /output"
   exit 1
 fi
 shift
 
-# 1. Clone or update repository
-if [[ ! -d "$REPO_DIR/.git" ]]; then
-  echo "Cloning Bausteinsicht repo..."
-  git clone "$REPO_URL" "$REPO_DIR"
-else
-  echo "Updating Bausteinsicht repo..."
-  git -C "$REPO_DIR" pull --ff-only 2>/dev/null || true
+if [[ "$CMD" == "build" ]]; then
+  # Clone or update repository
+  if [[ ! -d "$REPO_DIR/.git" ]]; then
+    echo "Cloning Bausteinsicht repo..."
+    git clone "$REPO_URL" "$REPO_DIR"
+  else
+    echo "Updating Bausteinsicht repo..."
+    git -C "$REPO_DIR" pull --ff-only 2>/dev/null || true
+  fi
+
+  # Build container image from Dockerfile in repo
+  echo "Building Bausteinsicht container image..."
+  podman build -t "$IMAGE_NAME" "$REPO_DIR"
+  exit 0
 fi
 
-# 2. Build container image from Dockerfile in repo
-echo "Building Bausteinsicht container image..."
-podman build -t "$IMAGE_NAME" "$REPO_DIR"
+# Run container with model directory mounted (image must be built first)
+if ! podman image exists "$IMAGE_NAME"; then
+  echo "Error: image '$IMAGE_NAME' not found. Run '$0 build' first." >&2
+  exit 1
+fi
 
-# 3. Run container with model directory mounted
 echo "Running: bausteinsicht $CMD --model $MODEL_IN_CONTAINER $*"
 podman run --rm \
   -v "$MODEL_DIR:/model:ro" \

@@ -18,6 +18,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Build Bausteinsicht container image
+        run: scripts/bausteinsicht-container.sh build
+
       - name: Validate model
         run: scripts/bausteinsicht-container.sh validate
 
