@@ -11,6 +11,7 @@ def create_config():
             "c-lib/",
             "rust-lib/",
             "tests/",
+            "Makefile",
         ],
         project_features=[
             "HTML2PDF",
