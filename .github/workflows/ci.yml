@@ -457,6 +457,10 @@ jobs:
           else
             echo "ℹ️  Kein requirements.json → Trend-Datei wird als Artefakt hochgeladen"
           fi
+          # GitHub Pages braucht index.html als Einstiegspunkt
+          if [ -f reports/bb_dashboard.html ]; then
+            cp reports/bb_dashboard.html reports/index.html
+          fi
 
       # ── Artefakte hochladen ───────────────────────────────────────────────────
       - name: Upload Reports
