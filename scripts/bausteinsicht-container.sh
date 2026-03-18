@@ -29,10 +29,10 @@ if [[ "$CMD" == "build" ]]; then
   # Clone or update repository
   if [[ ! -d "$REPO_DIR/.git" ]]; then
     echo "Cloning Bausteinsicht repo..."
-    GIT_TERMINAL_PROMPT=0 git clone --depth 1 "$REPO_URL" "$REPO_DIR"
+    git -c credential.helper='' -c http.extraHeader='' clone --depth 1 "$REPO_URL" "$REPO_DIR"
   else
     echo "Updating Bausteinsicht repo..."
-    GIT_TERMINAL_PROMPT=0 git -C "$REPO_DIR" pull --ff-only 2>/dev/null || true
+    git -C "$REPO_DIR" -c credential.helper='' pull --ff-only 2>/dev/null || true
   fi
 
   # Build container image from Dockerfile in repo
