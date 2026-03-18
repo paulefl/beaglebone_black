@@ -48,6 +48,10 @@ Wenn du danach der Meinung bist dass alles passt dann frage nach ob der User es 
   - Falls der Run **fehlgeschlagen** ist: Lies die Logs (`gh run view <run-id> --log-failed`), behebe die Fehler, commite und pushe erneut — dann wieder ab "Warte auf den CI-Run".
   - Falls der Run **erfolgreich** ist: Informiere den User mit einer kurzen Zusammenfassung der bestandenen Checks.
 
+**Erweitere ChangeLog**
+
+Erstelle einen Changelog eintrag 
+
 * **Merge nur nach erfolgreichem Run:**
   Merge den PR erst wenn `gh run view` den Status `completed` und conclusion `success` zeigt:
   ```
