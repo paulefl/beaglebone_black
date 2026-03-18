@@ -685,7 +685,7 @@ PYEOF
       - apt-get update -qq && apt-get install -y --no-install-recommends libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz0b libfontconfig1 2>/dev/null
       - pip install "strictdoc[pdf]" --quiet
       - strictdoc export docs/requirements/ --formats html --output-dir /workspace/strictdoc
-      - strictdoc export docs/requirements/ --formats pdf  --output-dir /workspace/strictdoc
+      - strictdoc export docs/requirements/ --formats html2pdf --output-dir /workspace/strictdoc
       - find /workspace/strictdoc -name "*.html" -o -name "*.pdf" | sort
 
   - name: package-artifacts

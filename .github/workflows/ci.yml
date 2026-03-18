@@ -187,7 +187,7 @@ jobs:
         run: strictdoc export docs/requirements/ --formats html --output-dir output/strictdoc
 
       - name: PDF Export generieren
-        run: strictdoc export docs/requirements/ --formats pdf --output-dir output/strictdoc
+        run: strictdoc export docs/requirements/ --formats html2pdf --output-dir output/strictdoc
 
       - name: Upload StrictDoc HTML + PDF
         uses: actions/upload-artifact@v7

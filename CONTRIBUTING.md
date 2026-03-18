@@ -92,7 +92,7 @@ pip install "strictdoc[pdf]"
 strictdoc export docs/requirements/ --formats html --output-dir output/strictdoc
 
 # PDF-Dokumentation generieren
-strictdoc export docs/requirements/ --formats pdf --output-dir output/strictdoc
+strictdoc export docs/requirements/ --formats html2pdf --output-dir output/strictdoc
 ```
 
 > Für PDF werden Systembibliotheken benötigt: `sudo apt install libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz0b libfontconfig1`
