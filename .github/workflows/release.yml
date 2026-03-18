@@ -1,0 +1,73 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version bump type'
+        required: true
+        type: choice
+        options: [patch, minor, major]
+        default: patch
+
+jobs:
+  release:
+    name: Bump version and create release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Aktuelle VERSION aus Makefile lesen
+        id: current
+        run: echo "version=$(make version)" >> $GITHUB_OUTPUT
+
+      - name: Neue VERSION berechnen
+        id: next
+        run: |
+          IFS='.' read -r major minor patch <<< "${{ steps.current.outputs.version }}"
+          case "${{ inputs.bump }}" in
+            major) major=$((major+1)); minor=0; patch=0 ;;
+            minor) minor=$((minor+1)); patch=0 ;;
+            patch) patch=$((patch+1)) ;;
+          esac
+          echo "version=${major}.${minor}.${patch}" >> $GITHUB_OUTPUT
+
+      - name: VERSION in Makefile aktualisieren
+        run: |
+          sed -i "s/^VERSION = .*/VERSION = ${{ steps.next.outputs.version }}/" Makefile
+
+      - name: "[Unreleased] in CHANGELOG.md umbenennen"
+        run: |
+          DATE=$(date +%Y-%m-%d)
+          VERSION="${{ steps.next.outputs.version }}"
+          PREV="${{ steps.current.outputs.version }}"
+          REPO="${{ github.repository }}"
+          # Rename [Unreleased] heading to versioned heading
+          sed -i "s|^## \[Unreleased\]$|## [${VERSION}] — ${DATE}|" CHANGELOG.md
+          # Add new [Unreleased] section at top (after header block)
+          sed -i "s|^## \[${VERSION}\] — ${DATE}|## [Unreleased]\n\n---\n\n## [${VERSION}] — ${DATE}|" CHANGELOG.md
+          # Update comparison links at bottom
+          sed -i "s|^\[Unreleased\]:.*|[Unreleased]: https://github.com/${REPO}/compare/v${VERSION}...HEAD|" CHANGELOG.md
+          # Add new version link
+          sed -i "/^\[Unreleased\]:/a [${VERSION}]: https://github.com/${REPO}/compare/v${PREV}...v${VERSION}" CHANGELOG.md
+
+      - name: Zusammenfassung anzeigen
+        run: |
+          echo "## Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Previous version:** v${{ steps.current.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **New version:** v${{ steps.next.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Bump type:** ${{ inputs.bump }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Commit + Tag + Push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Makefile CHANGELOG.md
+          git commit -m "chore(release): bump version to ${{ steps.next.outputs.version }} [skip ci]"
+          git tag "v${{ steps.next.outputs.version }}"
+          git push
+          git push --tags
