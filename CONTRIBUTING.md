@@ -89,9 +89,9 @@ Sowohl die `.sdoc`-Datei (via `RELATIONS`) als auch die Quelldatei (via `[SDOC_L
 pip install "strictdoc[pdf]"
 
 # HTML-Dokumentation generieren (validiert automatisch beim Export)
-strictdoc export docs/requirements/ --formats html --output-dir output/strictdoc
+strictdoc export . --formats html --output-dir output/strictdoc
 # PDF-Dokumentation generieren
-strictdoc export docs/requirements/ --formats html2pdf --output-dir output/strictdoc```
+strictdoc export . --formats html2pdf --output-dir output/strictdoc```
 
 > Für PDF (`html2pdf`) wird Chromium benötigt: `sudo apt install chromium-driver` (nur falls `chromedriver` nicht verfügbar ist)
 
