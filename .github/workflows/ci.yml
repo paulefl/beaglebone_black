@@ -420,6 +420,10 @@ jobs:
           name: strictdoc-reqif
           path: reports/strictdoc/reqif-sdoc/
 
+      - name: CHANGELOG für Pages bereitstellen
+        if: github.ref == 'refs/heads/main'
+        run: cp CHANGELOG.md reports/CHANGELOG.md
+
       - name: GitHub Pages vorbereiten
         if: github.ref == 'refs/heads/main'
         uses: actions/configure-pages@v5
@@ -445,6 +449,35 @@ jobs:
             exit 1
           fi
           echo "✅ GitHub Pages erreichbar ($STATUS)"
+
+  # ── Changelog Update ──────────────────────────
+  changelog:
+    name: Update Changelog
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate Unreleased section with git-cliff
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: cliff.toml
+          args: --unreleased --prepend CHANGELOG.md
+        env:
+          OUTPUT: CHANGELOG.md
+          GITHUB_REPO: ${{ github.repository }}
+
+      - name: Commit updated CHANGELOG.md
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git diff --cached --quiet || git commit -m "docs(changelog): update unreleased section [skip ci]"
+          git push
 
   # ── Release ───────────────────────────────────
   release:
