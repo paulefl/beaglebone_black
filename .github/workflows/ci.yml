@@ -434,6 +434,18 @@ jobs:
         if: github.ref == 'refs/heads/main'
         uses: actions/deploy-pages@v4
 
+      - name: Pages Smoke-Test
+        if: github.ref == 'refs/heads/main'
+        run: |
+          sleep 15
+          URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL")
+          if [ "$STATUS" != "200" ]; then
+            echo "❌ GitHub Pages nicht erreichbar (HTTP $STATUS)"
+            exit 1
+          fi
+          echo "✅ GitHub Pages erreichbar ($STATUS)"
+
   # ── Release ───────────────────────────────────
   release:
     name: GitHub Release
