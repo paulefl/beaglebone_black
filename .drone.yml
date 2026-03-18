@@ -684,7 +684,6 @@ PYEOF
     commands:
       - apt-get update -qq && apt-get install -y --no-install-recommends libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz0b libfontconfig1 2>/dev/null
       - pip install "strictdoc[pdf]" --quiet
-      - strictdoc check docs/requirements/ && echo "✅ StrictDoc Validierung OK" || (echo "❌ Kaputte Referenzen gefunden" && exit 1)
       - strictdoc export docs/requirements/ --formats html --output-dir /workspace/strictdoc
       - strictdoc export docs/requirements/ --formats pdf  --output-dir /workspace/strictdoc
       - find /workspace/strictdoc -name "*.html" -o -name "*.pdf" | sort

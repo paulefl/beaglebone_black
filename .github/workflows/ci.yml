@@ -183,9 +183,6 @@ jobs:
       - name: StrictDoc installieren
         run: pip install "strictdoc[pdf]" --quiet
 
-      - name: Anforderungen validieren
-        run: strictdoc check docs/requirements/
-
       - name: HTML Export generieren
         run: strictdoc export docs/requirements/ --formats html --output-dir output/strictdoc
 

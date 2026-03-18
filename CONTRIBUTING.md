@@ -88,10 +88,7 @@ Sowohl die `.sdoc`-Datei (via `RELATIONS`) als auch die Quelldatei (via `[SDOC_L
 # Abhängigkeiten installieren (inkl. PDF-Support via WeasyPrint)
 pip install "strictdoc[pdf]"
 
-# Anforderungen validieren (kaputte Referenzen prüfen)
-strictdoc check docs/requirements/
-
-# HTML-Dokumentation generieren
+# HTML-Dokumentation generieren (validiert automatisch beim Export)
 strictdoc export docs/requirements/ --formats html --output-dir output/strictdoc
 
 # PDF-Dokumentation generieren
