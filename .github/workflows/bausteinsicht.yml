@@ -4,10 +4,10 @@ on:
   push:
     branches: [main]
     paths:
-      - 'arch/model/**'
+      - 'arch/model/beaglebone_black.jsonc'
   pull_request:
     paths:
-      - 'arch/model/**'
+      - 'arch/model/beaglebone_black.jsonc'
   workflow_dispatch:
 
 jobs:
