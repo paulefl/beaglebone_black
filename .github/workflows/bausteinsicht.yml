@@ -1,0 +1,49 @@
+name: Bausteinsicht
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'arch/model/**'
+  pull_request:
+    paths:
+      - 'arch/model/**'
+  workflow_dispatch:
+
+jobs:
+  bausteinsicht:
+    name: Validate and export architecture diagrams
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Clone Bausteinsicht repository
+        run: |
+          git clone https://github.com/docToolchain/Bausteinsicht.git scripts/.bausteinsicht-repo
+
+      - name: Build Bausteinsicht container image
+        run: |
+          podman build -t bausteinsicht:local scripts/.bausteinsicht-repo
+
+      - name: Validate model
+        run: |
+          podman run --rm \
+            -v "${{ github.workspace }}/arch/model:/model:ro" \
+            bausteinsicht:local \
+            bausteinsicht validate --model /model/beaglebone_black.jsonc
+
+      - name: Export diagrams
+        run: |
+          mkdir -p arch/model/export
+          podman run --rm \
+            -v "${{ github.workspace }}/arch/model:/model" \
+            bausteinsicht:local \
+            bausteinsicht export --model /model/beaglebone_black.jsonc --output /model/export
+
+      - name: Upload exported diagrams
+        uses: actions/upload-artifact@v4
+        with:
+          name: bausteinsicht-export
+          path: arch/model/export/
+          if-no-files-found: warn
