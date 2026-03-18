@@ -51,9 +51,14 @@ deploy:
 	  debian@192.168.7.2:/app/
 	ssh debian@192.168.7.2 "systemctl restart embedded-sw"
 
+req-tracing:
+	strictdoc --debug export . --formats html    --output-dir output/strictdoc
+	strictdoc --debug export . --formats html2pdf --output-dir output/strictdoc
+	python3 scripts/req_tracing_summary.py
+
 clean:
 	$(MAKE) -C c-lib clean
 	cd rust-lib && cargo clean
 	rm -f bin/embedded bin/bbcli-*
 
-.PHONY: all c-lib rust-lib go-api cli test test-ci test-cover lint test-python test-report test-report-open deploy clean
+.PHONY: all c-lib rust-lib go-api cli test test-ci test-cover lint test-python test-report test-report-open deploy clean req-tracing
