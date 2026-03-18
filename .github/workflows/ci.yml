@@ -495,7 +495,7 @@ jobs:
       - name: Checksums
         run: |
           cd bin
-          sha256sum * > checksums.sha256
+          find . -maxdepth 1 -type f | sort | xargs sha256sum > checksums.sha256
           cat checksums.sha256
       - name: Version aus Makefile lesen
         id: version
