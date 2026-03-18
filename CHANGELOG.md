@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Podman container script and CI workflow (#45) (#46) (#46)
+- SonarCloud Integration für Quality Monitoring (#47) (#48) (#48)
+
+### CI
+
+- Use container script instead of inline podman commands 
+- Separate build step from run commands 
+- Add export-diagram, export-table and export-png steps 
+- Commit export changes back to repo if files changed 
+- Update exported diagrams [skip ci] 
+- Update exported diagrams [skip ci] 
+- Trigger only on beaglebone_black.jsonc changes 
+- Trigger SonarCloud verification 
+
+### Fixed
+
+- Mount model dir rw, fix export paths, add export dirs step 
+- Disable git credential prompt for public repo clone 
+- Bypass git credential helper for public repo clone 
+- Move git clone to workflow step, script only builds image 
+- Use actions/checkout to clone Bausteinsicht repo 
+- Drop container approach, run binary directly in CI 
+- Install draw.io CLI and use xvfb-run for PNG export 
+- Remove duplicate OUTPUT env for git-cliff, increase Pages smoke-test sleep to 30s 
+
 > **Version source of truth:** [`Makefile`](Makefile) — `VERSION` variable.
 > The version is only bumped manually when an official GitHub Release (git tag) is created.
 
