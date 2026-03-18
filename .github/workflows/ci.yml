@@ -22,7 +22,7 @@ jobs:
 
       - name: Install report tools
         run: |
-          go install gotest.tools/gotestsum@latest
+          go install gotest.tools/gotestsum@v1.12.0
           go install github.com/boumenot/gocover-cobertura@latest
 
       - name: Go Unit Tests
@@ -311,10 +311,12 @@ jobs:
         continue-on-error: true
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
+        uses: SonarSource/sonarqube-scan-action@v5
+        continue-on-error: true  # kein Blocker solange SONAR_TOKEN nicht gesetzt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN:  ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
 
   # ── Test Report + Trend ───────────────────────
   report:
