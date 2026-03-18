@@ -26,26 +26,25 @@ jobs:
       - name: Validate model
         run: scripts/bausteinsicht-container.sh validate
 
+      - name: Create export directories
+        run: mkdir -p arch/model/export/png arch/model/export/plantuml arch/model/export/mermaid arch/model/export/table
+
       - name: Export PNG diagrams
-        run: |
-          mkdir -p arch/model/export/png
-          scripts/bausteinsicht-container.sh export --output /model/export/png
+        continue-on-error: true  # draw.io requires Xvfb/GPU — may not be available in CI
+        run: scripts/bausteinsicht-container.sh export --output /model/export/png
 
       - name: Export PlantUML C4 diagrams
         run: |
-          mkdir -p arch/model/export/plantuml
           scripts/bausteinsicht-container.sh export-diagram \
             --diagram-format plantuml --output /model/export/plantuml
 
       - name: Export Mermaid C4 diagrams
         run: |
-          mkdir -p arch/model/export/mermaid
           scripts/bausteinsicht-container.sh export-diagram \
             --diagram-format mermaid --output /model/export/mermaid
 
       - name: Export element table (Markdown)
         run: |
-          mkdir -p arch/model/export/table
           scripts/bausteinsicht-container.sh export-table \
             --table-format md --combined --output /model/export/table
 

@@ -49,6 +49,6 @@ fi
 
 echo "Running: bausteinsicht $CMD --model $MODEL_IN_CONTAINER $*"
 podman run --rm \
-  -v "$MODEL_DIR:/model:ro" \
+  -v "$MODEL_DIR:/model:rw" \
   "$IMAGE_NAME" \
   bausteinsicht "$CMD" --model "$MODEL_IN_CONTAINER" "$@"
