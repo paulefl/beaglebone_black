@@ -32,6 +32,8 @@ Wenn du danach der Meinung bist dass alles passt dann frage nach ob der User es 
 * Push
 * Erstelle einen PR und konfiguriere ihn so dass er dich informiert wenn fertig ist
 * Falls ein Akkeptenzkriterium der erfolgreiche PR run ist dann prüfe dies auch
+
+* Nach Pr merge switch zum main und pull 
  
 
 
