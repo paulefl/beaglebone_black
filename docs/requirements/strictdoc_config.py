@@ -7,6 +7,12 @@ def create_config():
         project_features=[
             "HTML2PDF",
             "TRACEABILITY_SCREEN",
+            "DEEP_TRACEABILITY_SCREEN",
+            "TRACEABILITY_MATRIX_SCREEN",
             "TABLE_SCREEN",
+            "PROJECT_STATISTICS_SCREEN",
+            "REQUIREMENT_TO_SOURCE_TRACEABILITY",
+            "MERMAID",
+            "DIFF",
         ],
     )
