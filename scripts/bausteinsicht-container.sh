@@ -26,13 +26,12 @@ fi
 shift
 
 if [[ "$CMD" == "build" ]]; then
-  # Clone or update repository
+  # Clone or update repository if not already present
   if [[ ! -d "$REPO_DIR/.git" ]]; then
     echo "Cloning Bausteinsicht repo..."
-    git -c credential.helper='' -c http.extraHeader='' clone --depth 1 "$REPO_URL" "$REPO_DIR"
+    git clone --depth 1 "$REPO_URL" "$REPO_DIR"
   else
-    echo "Updating Bausteinsicht repo..."
-    git -C "$REPO_DIR" -c credential.helper='' pull --ff-only 2>/dev/null || true
+    echo "Repo already present at $REPO_DIR"
   fi
 
   # Build container image from Dockerfile in repo

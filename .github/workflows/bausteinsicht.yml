@@ -20,6 +20,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Clone Bausteinsicht repository
+        run: git clone --depth 1 https://github.com/docToolchain/Bausteinsicht.git scripts/.bausteinsicht-repo
+
       - name: Build Bausteinsicht container image
         run: scripts/bausteinsicht-container.sh build
 
