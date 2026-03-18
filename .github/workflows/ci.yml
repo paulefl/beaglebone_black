@@ -551,9 +551,18 @@ jobs:
         uses: orhun/git-cliff-action@v4
         with:
           config: cliff.toml
-          args: --unreleased --prepend CHANGELOG.md
+          args: --unreleased --output unreleased.md
         env:
+          OUTPUT: unreleased.md
           GITHUB_REPO: ${{ github.repository }}
+
+      - name: Prepend unreleased section to CHANGELOG.md
+        run: |
+          if [ -s unreleased.md ]; then
+            cat unreleased.md CHANGELOG.md > CHANGELOG.md.tmp
+            mv CHANGELOG.md.tmp CHANGELOG.md
+            rm unreleased.md
+          fi
 
       - name: Commit updated CHANGELOG.md
         run: |
