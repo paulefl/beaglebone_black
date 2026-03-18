@@ -217,7 +217,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: strictdoc-pdf
-          path: output/strictdoc/pdf/
+          path: output/strictdoc/html2pdf/
           retention-days: 30
 
       - name: Upload StrictDoc Excel
@@ -390,6 +390,7 @@ jobs:
       # ── GitHub Pages: Dashboard veröffentlichen (nur main) ────────────────────
       - name: StrictDoc HTML laden
         if: github.ref == 'refs/heads/main'
+        continue-on-error: true
         uses: actions/download-artifact@v8
         with:
           name: strictdoc-html
@@ -397,6 +398,7 @@ jobs:
 
       - name: StrictDoc PDF laden
         if: github.ref == 'refs/heads/main'
+        continue-on-error: true
         uses: actions/download-artifact@v8
         with:
           name: strictdoc-pdf
@@ -404,6 +406,7 @@ jobs:
 
       - name: StrictDoc Excel laden
         if: github.ref == 'refs/heads/main'
+        continue-on-error: true
         uses: actions/download-artifact@v8
         with:
           name: strictdoc-excel
@@ -411,6 +414,7 @@ jobs:
 
       - name: StrictDoc ReqIF laden
         if: github.ref == 'refs/heads/main'
+        continue-on-error: true
         uses: actions/download-artifact@v8
         with:
           name: strictdoc-reqif
