@@ -1,0 +1,56 @@
+[DOCUMENT]
+TITLE: Software Requirements
+
+[REQUIREMENT]
+UID: SWR-001
+TITLE: HAL Interface Definition
+STATEMENT: Der HardwareDriver Interface muss alle Hardware-Operationen (BME280, GPIO, UART, SPI) abstrakt definieren, sodass verschiedene Backends austauschbar sind.
+RELATIONS:
+- TYPE: File
+  VALUE: go-api/pkg/hal/interface.go
+- TYPE: File
+  VALUE: go-api/pkg/hal/hal_test.go
+
+[REQUIREMENT]
+UID: SWR-002
+TITLE: Backend-Auswahl per Umgebungsvariable
+STATEMENT: Das System muss über die Umgebungsvariable HW_BACKEND die Auswahl des Hardware-Backends (c, rust, auto) ermöglichen. Der Standardwert ist auto.
+RELATIONS:
+- TYPE: File
+  VALUE: go-api/pkg/hal/loader/factory.go
+- TYPE: File
+  VALUE: tests/api/test_api.py
+
+[REQUIREMENT]
+UID: SWR-003
+TITLE: Mock Driver für Tests
+STATEMENT: Der Mock Driver muss das HardwareDriver Interface vollständig implementieren und darf keine echte Hardware benötigen.
+RELATIONS:
+- TYPE: File
+  VALUE: go-api/pkg/hal/mock/driver.go
+- TYPE: File
+  VALUE: go-api/pkg/hal/hal_test.go
+
+[REQUIREMENT]
+UID: SWR-004
+TITLE: Hardware-Zugriff nur in C und Rust
+STATEMENT: Hardware-Zugriffe dürfen ausschließlich in C und Rust implementiert werden. Go darf nicht direkt auf Hardware zugreifen.
+RELATIONS:
+- TYPE: File
+  VALUE: go-api/pkg/hal/c/driver.go
+- TYPE: File
+  VALUE: go-api/pkg/hal/rust/driver.go
+- TYPE: File
+  VALUE: c-lib/include/bme280.h
+- TYPE: File
+  VALUE: rust-lib/src/lib.rs
+
+[REQUIREMENT]
+UID: SWR-005
+TITLE: Auto-Fallback Mechanismus
+STATEMENT: Im Backend-Modus auto muss das System zunächst das C-Backend versuchen und bei Fehler automatisch auf das Rust-Backend zurückfallen.
+RELATIONS:
+- TYPE: File
+  VALUE: go-api/pkg/hal/loader/factory.go
+- TYPE: File
+  VALUE: go-api/pkg/hal/hal_test.go

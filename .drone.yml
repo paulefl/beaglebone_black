@@ -515,6 +515,7 @@ trigger:
       - arch/**
       - "**/*.adoc"
       - "**/.buildadoc"
+      - "docs/requirements/**"
       - .drone.yml
 
 depends_on: [2-embedded-sw, 3-tools]
@@ -674,12 +675,24 @@ json.dump(trend, open(trend_file,"w"), indent=2)
 print(f"✅ Trend: Build #{entry['build']} | {entry['erfolgsrate']}% | Cov: {entry['avg_coverage']}%")
 PYEOF
 
+  - name: strictdoc-export
+    image: python:3.12-slim
+    depends_on: [collect-results]
+    volumes:
+      - name: report-workspace
+        path: /workspace
+    commands:
+      - pip install strictdoc --quiet
+      - command -v chromedriver || apt-get install -y --no-install-recommends chromium-driver 2>/dev/null
+      - strictdoc export . --formats html    --output-dir /workspace/strictdoc      - strictdoc export . --formats html2pdf --output-dir /workspace/strictdoc      - find /workspace/strictdoc -name "*.html" -o -name "*.pdf" | sort
+
   - name: package-artifacts
     image: alpine
     depends_on:
       - generate-reports
       - generate-architecture
       - build-docs
+      - strictdoc-export
       - save-trend
     volumes:
       - name: report-workspace
@@ -692,7 +705,8 @@ PYEOF
       - mkdir -p ${OUTDIR}
       - cp /workspace/reports/*.{html,pdf,md,json} ${OUTDIR}/ 2>/dev/null || true
       - cp /workspace/arch/*.{html,pdf}            ${OUTDIR}/ 2>/dev/null || true
-      - cp -r /workspace/docs ${OUTDIR}/docs        2>/dev/null || true
+      - cp -r /workspace/docs ${OUTDIR}/docs              2>/dev/null || true
+      - cp -r /workspace/strictdoc ${OUTDIR}/strictdoc   2>/dev/null || true
       - cd ${OUTDIR} && zip -r /artifacts/reports-${DRONE_BUILD_NUMBER}.zip .
       - echo "ZIP: $(du -sh /artifacts/reports-${DRONE_BUILD_NUMBER}.zip | cut -f1)"
 

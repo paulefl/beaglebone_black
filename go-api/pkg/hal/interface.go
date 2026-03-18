@@ -1,3 +1,5 @@
+// [SDOC_LINK: SWR-001]
+// [SDOC_LINK: SWR-004]
 package hal
 
 import "time"

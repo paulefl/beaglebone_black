@@ -1,3 +1,8 @@
+// [SDOC_LINK: SWR-003]
+// [SDOC_LINK: HW-DRV-001]
+// [SDOC_LINK: HW-DRV-002]
+// [SDOC_LINK: HW-DRV-003]
+// [SDOC_LINK: HW-DRV-004]
 package hal_test
 
 import (
@@ -180,6 +185,7 @@ func TestMock_Reset(t *testing.T) {
 }
 
 // ── Fallback ────────────────────────────────────────────────────────────────
+// [SDOC_LINK: SWR-005]
 func TestFallback_PrimaerFehler(t *testing.T) {
 	primary := mock.New()
 	primary.Init()
