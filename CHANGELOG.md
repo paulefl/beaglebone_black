@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.1.0] — unreleased (next)
 
 ### Added
+- Bausteinsicht via Podman Container: `scripts/bausteinsicht-container.sh` + CI Workflow `bausteinsicht.yml` (#45)
 - GitHub Pages Smoke-Test nach Deploy — prüft HTTP 200 auf Pages-URL (#40)
 - Automatisierter Release-Workflow via `workflow_dispatch` mit bump-Input (patch/minor/major) (#43)
 - BME280 Hardware-Spec als Markdown: Bosch Datasheet BST-BME280-DS001 rev 1.24 (10 Dateien) + SeenGreat Modul-Doku mit BeagleBone Black Verdrahtung (#39)
