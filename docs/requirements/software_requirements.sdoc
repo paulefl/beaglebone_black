@@ -1,41 +1,60 @@
 [DOCUMENT]
 TITLE: Software Requirements
 
-[REQUIREMENT]
+[GRAMMAR]
+IMPORT_FROM_FILE: grammar.sgra
+
+[SW_REQUIREMENT]
 UID: SWR-001
 TITLE: HAL Interface Definition
 STATEMENT: Der HardwareDriver Interface muss alle Hardware-Operationen (BME280, GPIO, UART, SPI) abstrakt definieren, sodass verschiedene Backends austauschbar sind.
+STATUS: Active
+PRIORITY: High
 RELATIONS:
+- TYPE: Parent
+  VALUE: SYS-004
 - TYPE: File
   VALUE: go-api/pkg/hal/interface.go
 - TYPE: File
   VALUE: go-api/pkg/hal/hal_test.go
 
-[REQUIREMENT]
+[SW_REQUIREMENT]
 UID: SWR-002
 TITLE: Backend-Auswahl per Umgebungsvariable
 STATEMENT: Das System muss über die Umgebungsvariable HW_BACKEND die Auswahl des Hardware-Backends (c, rust, auto) ermöglichen. Der Standardwert ist auto.
+STATUS: Active
+PRIORITY: High
 RELATIONS:
+- TYPE: Parent
+  VALUE: SYS-004
 - TYPE: File
   VALUE: go-api/pkg/hal/loader/factory.go
 - TYPE: File
   VALUE: tests/api/test_api.py
 
-[REQUIREMENT]
+[SW_REQUIREMENT]
 UID: SWR-003
 TITLE: Mock Driver für Tests
 STATEMENT: Der Mock Driver muss das HardwareDriver Interface vollständig implementieren und darf keine echte Hardware benötigen.
+STATUS: Active
+PRIORITY: Medium
 RELATIONS:
+- TYPE: Parent
+  VALUE: SWR-001
 - TYPE: File
   VALUE: go-api/pkg/hal/mock/driver.go
 - TYPE: File
   VALUE: go-api/pkg/hal/hal_test.go
 
-[REQUIREMENT]
+[SW_REQUIREMENT]
 UID: SWR-004
 TITLE: Hardware-Zugriff nur in C und Rust
 STATEMENT: Hardware-Zugriffe dürfen ausschließlich in C und Rust implementiert werden. Go darf nicht direkt auf Hardware zugreifen.
+STATUS: Active
+PRIORITY: High
 RELATIONS:
+- TYPE: Parent
+  VALUE: SYS-004
 - TYPE: File
   VALUE: go-api/pkg/hal/c/driver.go
 - TYPE: File
@@ -45,12 +64,93 @@ RELATIONS:
 - TYPE: File
   VALUE: rust-lib/src/lib.rs
 
-[REQUIREMENT]
+[SW_REQUIREMENT]
 UID: SWR-005
 TITLE: Auto-Fallback Mechanismus
 STATEMENT: Im Backend-Modus auto muss das System zunächst das C-Backend versuchen und bei Fehler automatisch auf das Rust-Backend zurückfallen.
+STATUS: Active
+PRIORITY: Medium
 RELATIONS:
+- TYPE: Parent
+  VALUE: SWR-002
 - TYPE: File
   VALUE: go-api/pkg/hal/loader/factory.go
 - TYPE: File
   VALUE: go-api/pkg/hal/hal_test.go
+
+[SOURCE_CODE]
+UID: SC-001
+TITLE: HAL Interface
+STATEMENT: Definiert das HardwareDriver Interface für alle Hardware-Backends.
+LANGUAGE: Go
+RELATIONS:
+- TYPE: Parent
+  VALUE: SWR-001
+- TYPE: File
+  VALUE: go-api/pkg/hal/interface.go
+
+[SOURCE_CODE]
+UID: SC-002
+TITLE: Mock Driver
+STATEMENT: Test-Implementierung des HardwareDriver Interface ohne echte Hardware.
+LANGUAGE: Go
+RELATIONS:
+- TYPE: Parent
+  VALUE: SWR-003
+- TYPE: File
+  VALUE: go-api/pkg/hal/mock/driver.go
+
+[SOURCE_CODE]
+UID: SC-003
+TITLE: Backend Factory
+STATEMENT: Wählt das aktive Hardware-Backend anhand der HW_BACKEND Umgebungsvariable.
+LANGUAGE: Go
+RELATIONS:
+- TYPE: Parent
+  VALUE: SWR-002
+- TYPE: File
+  VALUE: go-api/pkg/hal/loader/factory.go
+
+[TEST_CASE]
+UID: TC-001
+TITLE: BME280 Lesen Erfolg
+STATEMENT: Verifiziert, dass BME280Read() gültige Messwerte zurückgibt.
+TEST_TYPE: Unit
+RELATIONS:
+- TYPE: Parent
+  VALUE: SWR-001
+- TYPE: File
+  VALUE: go-api/pkg/hal/hal_test.go
+
+[TEST_CASE]
+UID: TC-002
+TITLE: GPIO Schreiben und Lesen
+STATEMENT: Verifiziert GPIO-Schreib- und Leseoperation über den Mock Driver.
+TEST_TYPE: Unit
+RELATIONS:
+- TYPE: Parent
+  VALUE: SWR-003
+- TYPE: File
+  VALUE: go-api/pkg/hal/hal_test.go
+
+[TEST_CASE]
+UID: TC-003
+TITLE: Auto-Fallback bei C-Fehler
+STATEMENT: Verifiziert, dass das System bei C-Backend-Fehler auf Rust zurückfällt.
+TEST_TYPE: Unit
+RELATIONS:
+- TYPE: Parent
+  VALUE: SWR-005
+- TYPE: File
+  VALUE: go-api/pkg/hal/hal_test.go
+
+[TEST_CASE]
+UID: TC-004
+TITLE: API Backend-Wechsel
+STATEMENT: Verifiziert, dass HW_BACKEND per REST API umgeschaltet werden kann.
+TEST_TYPE: Integration
+RELATIONS:
+- TYPE: Parent
+  VALUE: SWR-002
+- TYPE: File
+  VALUE: tests/api/test_api.py

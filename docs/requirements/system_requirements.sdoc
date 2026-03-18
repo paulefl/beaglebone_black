@@ -1,46 +1,54 @@
 [DOCUMENT]
 TITLE: System Requirements
 
-[REQUIREMENT]
+[GRAMMAR]
+IMPORT_FROM_FILE: grammar.sgra
+
+[SYS_REQUIREMENT]
 UID: SYS-001
 TITLE: ARM Cortex-A8 Zielplattform
 STATEMENT: Das System muss auf einem BeagleBone Black mit ARM Cortex-A8 Prozessor und 512 MB RAM lauffähig sein.
+STATUS: Active
 RELATIONS:
 - TYPE: File
   VALUE: go-api/cmd/main.go
 
-[REQUIREMENT]
+[SYS_REQUIREMENT]
 UID: SYS-002
 TITLE: Betriebssystem
 STATEMENT: Das System muss unter Linux (Debian) auf dem BeagleBone Black betrieben werden können.
+STATUS: Active
 RELATIONS:
 - TYPE: File
   VALUE: go-api/cmd/main.go
 
-[REQUIREMENT]
+[SYS_REQUIREMENT]
 UID: SYS-003
 TITLE: REST API Erreichbarkeit
 STATEMENT: Das System muss eine REST API auf Port 5000 bereitstellen, die über das Netzwerk erreichbar ist.
+STATUS: Active
 RELATIONS:
 - TYPE: File
   VALUE: go-api/cmd/main.go
 - TYPE: File
   VALUE: tests/api/test_api.py
 
-[REQUIREMENT]
+[SYS_REQUIREMENT]
 UID: SYS-004
 TITLE: Hardware-Schnittstellen
 STATEMENT: Das System muss die Hardware-Schnittstellen BME280 (I2C), GPIO, UART und SPI unterstützen.
+STATUS: Active
 RELATIONS:
 - TYPE: File
   VALUE: go-api/pkg/hal/interface.go
 - TYPE: File
   VALUE: go-api/pkg/hal/hal_test.go
 
-[REQUIREMENT]
+[SYS_REQUIREMENT]
 UID: SYS-005
 TITLE: Cross-Compilation
 STATEMENT: Das System muss aus einer x86-64 Entwicklungsumgebung heraus für ARM v7 cross-kompiliert werden können.
+STATUS: Active
 RELATIONS:
 - TYPE: File
   VALUE: Makefile

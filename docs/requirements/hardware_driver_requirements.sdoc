@@ -1,11 +1,17 @@
 [DOCUMENT]
 TITLE: Hardware Driver Requirements
 
-[REQUIREMENT]
+[GRAMMAR]
+IMPORT_FROM_FILE: grammar.sgra
+
+[HW_REQUIREMENT]
 UID: HW-DRV-001
 TITLE: BME280 Messwerte
 STATEMENT: Der BME280-Treiber muss Temperatur (°C), Luftfeuchtigkeit (%) und Luftdruck (hPa) auslesen und zurückgeben können.
+STATUS: Active
 RELATIONS:
+- TYPE: Parent
+  VALUE: SYS-004
 - TYPE: File
   VALUE: c-lib/include/bme280.h
 - TYPE: File
@@ -13,11 +19,14 @@ RELATIONS:
 - TYPE: File
   VALUE: go-api/pkg/hal/hal_test.go
 
-[REQUIREMENT]
+[HW_REQUIREMENT]
 UID: HW-DRV-002
 TITLE: GPIO Lesen und Schreiben
 STATEMENT: Der GPIO-Treiber muss digitale Pins lesen, schreiben und die Richtung (Input/Output) konfigurieren können.
+STATUS: Active
 RELATIONS:
+- TYPE: Parent
+  VALUE: SYS-004
 - TYPE: File
   VALUE: c-lib/include/gpio.h
 - TYPE: File
@@ -25,11 +34,14 @@ RELATIONS:
 - TYPE: File
   VALUE: go-api/pkg/hal/hal_test.go
 
-[REQUIREMENT]
+[HW_REQUIREMENT]
 UID: HW-DRV-003
 TITLE: UART Senden und Empfangen
 STATEMENT: Der UART-Treiber muss Datenpakete senden und empfangen sowie die Verbindung ordnungsgemäß schließen können.
+STATUS: Active
 RELATIONS:
+- TYPE: Parent
+  VALUE: SYS-004
 - TYPE: File
   VALUE: c-lib/include/uart.h
 - TYPE: File
@@ -37,14 +49,100 @@ RELATIONS:
 - TYPE: File
   VALUE: go-api/pkg/hal/hal_test.go
 
-[REQUIREMENT]
+[HW_REQUIREMENT]
 UID: HW-DRV-004
 TITLE: SPI Loopback Transfer
 STATEMENT: Der SPI-Treiber muss bidirektionale Datentransfers (Loopback) unterstützen und übertragene Bytes korrekt zurückliefern.
+STATUS: Active
 RELATIONS:
+- TYPE: Parent
+  VALUE: SYS-004
 - TYPE: File
   VALUE: c-lib/include/spi.h
 - TYPE: File
   VALUE: rust-lib/src/spi.rs
+- TYPE: File
+  VALUE: go-api/pkg/hal/hal_test.go
+
+[SOURCE_CODE]
+UID: SC-HW-001
+TITLE: BME280 C-Treiber Header
+STATEMENT: C-Header für den BME280 I2C Sensor-Treiber.
+LANGUAGE: C
+RELATIONS:
+- TYPE: Parent
+  VALUE: HW-DRV-001
+- TYPE: File
+  VALUE: c-lib/include/bme280.h
+
+[SOURCE_CODE]
+UID: SC-HW-002
+TITLE: GPIO C-Treiber Header
+STATEMENT: C-Header für den GPIO-Treiber.
+LANGUAGE: C
+RELATIONS:
+- TYPE: Parent
+  VALUE: HW-DRV-002
+- TYPE: File
+  VALUE: c-lib/include/gpio.h
+
+[SOURCE_CODE]
+UID: SC-HW-003
+TITLE: Rust Hardware Library
+STATEMENT: Rust FFI-Exports für alle Hardware-Schnittstellen.
+LANGUAGE: Rust
+RELATIONS:
+- TYPE: Parent
+  VALUE: HW-DRV-001
+- TYPE: Parent
+  VALUE: HW-DRV-002
+- TYPE: Parent
+  VALUE: HW-DRV-003
+- TYPE: Parent
+  VALUE: HW-DRV-004
+- TYPE: File
+  VALUE: rust-lib/src/lib.rs
+
+[TEST_CASE]
+UID: TC-HW-001
+TITLE: BME280 Mock Read
+STATEMENT: Verifiziert BME280Read() mit Mock Driver — Temperatur, Luftfeuchtigkeit, Druck.
+TEST_TYPE: Unit
+RELATIONS:
+- TYPE: Parent
+  VALUE: HW-DRV-001
+- TYPE: File
+  VALUE: go-api/pkg/hal/hal_test.go
+
+[TEST_CASE]
+UID: TC-HW-002
+TITLE: GPIO Tabelle (Schreiben/Lesen)
+STATEMENT: Verifiziert GPIO-Operationen für mehrere Pins und Werte.
+TEST_TYPE: Unit
+RELATIONS:
+- TYPE: Parent
+  VALUE: HW-DRV-002
+- TYPE: File
+  VALUE: go-api/pkg/hal/hal_test.go
+
+[TEST_CASE]
+UID: TC-HW-003
+TITLE: UART Send/Empfangen
+STATEMENT: Verifiziert UART-Senden und -Empfangen über den Mock Driver.
+TEST_TYPE: Unit
+RELATIONS:
+- TYPE: Parent
+  VALUE: HW-DRV-003
+- TYPE: File
+  VALUE: go-api/pkg/hal/hal_test.go
+
+[TEST_CASE]
+UID: TC-HW-004
+TITLE: SPI Loopback
+STATEMENT: Verifiziert SPI-Transfer mit Loopback (TX == RX).
+TEST_TYPE: Unit
+RELATIONS:
+- TYPE: Parent
+  VALUE: HW-DRV-004
 - TYPE: File
   VALUE: go-api/pkg/hal/hal_test.go
