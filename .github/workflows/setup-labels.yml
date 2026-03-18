@@ -1,0 +1,36 @@
+name: Setup Labels
+
+on:
+  workflow_dispatch:
+
+jobs:
+  labels:
+    name: Create / update labels
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Labels anlegen
+        run: |
+          # ── Standard-Labels ───────────────────────────────────────────────
+          gh label create bug           --color "#d73a4a" --description "Something isn't working"              --force
+          gh label create documentation --color "#0075ca" --description "Improvements or additions to documentation" --force
+          gh label create duplicate     --color "#cfd3d7" --description "This issue or pull request already exists" --force
+          gh label create enhancement   --color "#a2eeef" --description "New feature or request"               --force
+          gh label create "good first issue" --color "#7057ff" --description "Good for newcomers"              --force
+          gh label create "help wanted" --color "#008672" --description "Extra attention is needed"            --force
+          gh label create invalid       --color "#e4e669" --description "This doesn't seem right"              --force
+          gh label create question      --color "#d876e3" --description "Further information is requested"     --force
+          gh label create wontfix       --color "#ffffff" --description "This will not be worked on"           --force
+
+          # ── Projekt-spezifische Labels ────────────────────────────────────
+          gh label create test          --color "#0e8a16" --description "Fehlende oder fehlerhafte Tests"       --force
+          gh label create ci            --color "#e4e669" --description "CI/CD Pipeline Probleme"               --force
+          gh label create hardware      --color "#b60205" --description "BeagleBone / Hardware-spezifische Issues" --force
+          gh label create requirements  --color "#aaaaaa" --description "Requirements & Traceability (StrictDoc)" --force
+          gh label create cli           --color "#e8de20" --description "Command Line Tool"                     --force
+          gh label create refactor      --color "#fef2c0" --description "Code-Refactoring ohne Funktionsänderung" --force
+          gh label create security      --color "#ee0701" --description "Sicherheitsrelevante Issues"           --force
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
