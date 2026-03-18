@@ -1,3 +1,6 @@
 [project]
 title = "BeagleBone Black Embedded SW"
 html_export_output_dir = "output/strictdoc"
+
+[features]
+html2pdf = true
