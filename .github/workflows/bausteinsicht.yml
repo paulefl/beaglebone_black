@@ -24,10 +24,30 @@ jobs:
       - name: Validate model
         run: scripts/bausteinsicht-container.sh validate
 
-      - name: Export diagrams
-        run: scripts/bausteinsicht-container.sh export --output /model/export
+      - name: Export PNG diagrams
+        run: |
+          mkdir -p arch/model/export/png
+          scripts/bausteinsicht-container.sh export --output /model/export/png
 
-      - name: Upload exported diagrams
+      - name: Export PlantUML C4 diagrams
+        run: |
+          mkdir -p arch/model/export/plantuml
+          scripts/bausteinsicht-container.sh export-diagram \
+            --diagram-format plantuml --output /model/export/plantuml
+
+      - name: Export Mermaid C4 diagrams
+        run: |
+          mkdir -p arch/model/export/mermaid
+          scripts/bausteinsicht-container.sh export-diagram \
+            --diagram-format mermaid --output /model/export/mermaid
+
+      - name: Export element table (Markdown)
+        run: |
+          mkdir -p arch/model/export/table
+          scripts/bausteinsicht-container.sh export-table \
+            --table-format md --combined --output /model/export/table
+
+      - name: Upload exported artifacts
         uses: actions/upload-artifact@v4
         with:
           name: bausteinsicht-export
