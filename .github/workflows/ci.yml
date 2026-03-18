@@ -194,11 +194,9 @@ jobs:
         run: sudo apt-get install -y --no-install-recommends chromium-driver
 
       - name: HTML Export generieren
-        run: strictdoc export docs/requirements/ --formats html --output-dir output/strictdoc --config strictdoc.py
-
+        run: strictdoc export docs/requirements/ --formats html --output-dir output/strictdoc
       - name: PDF Export generieren (html2pdf)
-        run: strictdoc export docs/requirements/ --formats html2pdf --output-dir output/strictdoc --config strictdoc.py
-
+        run: strictdoc export docs/requirements/ --formats html2pdf --output-dir output/strictdoc
       - name: Upload StrictDoc HTML + PDF
         uses: actions/upload-artifact@v7
         with:

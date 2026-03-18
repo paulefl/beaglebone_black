@@ -684,9 +684,7 @@ PYEOF
     commands:
       - pip install strictdoc --quiet
       - command -v chromedriver || apt-get install -y --no-install-recommends chromium-driver 2>/dev/null
-      - strictdoc export docs/requirements/ --formats html    --output-dir /workspace/strictdoc --config strictdoc.py
-      - strictdoc export docs/requirements/ --formats html2pdf --output-dir /workspace/strictdoc --config strictdoc.py
-      - find /workspace/strictdoc -name "*.html" -o -name "*.pdf" | sort
+      - strictdoc export docs/requirements/ --formats html    --output-dir /workspace/strictdoc      - strictdoc export docs/requirements/ --formats html2pdf --output-dir /workspace/strictdoc      - find /workspace/strictdoc -name "*.html" -o -name "*.pdf" | sort
 
   - name: package-artifacts
     image: alpine
