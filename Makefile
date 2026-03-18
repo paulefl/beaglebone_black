@@ -1,3 +1,10 @@
+# ── Version ───────────────────────────────────────────────────────────────────
+# Source of truth for the project version.
+# Bump manually ONLY when creating an official GitHub Release (git tag vX.Y.Z).
+# CI uses this value for build artifacts and release notes.
+VERSION = 1.1.0
+
+# ── Cross-compilation ─────────────────────────────────────────────────────────
 CROSS   = arm-linux-gnueabihf-
 CC      = $(CROSS)gcc
 TARGET  = armv7-unknown-linux-musleabihf
@@ -63,4 +70,7 @@ clean:
 	cd rust-lib && cargo clean
 	rm -f bin/embedded bin/bbcli-*
 
-.PHONY: all c-lib rust-lib go-api cli test test-ci test-cover lint test-python test-report test-report-open deploy clean req-tracing
+version:
+	@echo "$(VERSION)"
+
+.PHONY: all c-lib rust-lib go-api cli test test-ci test-cover lint test-python test-report test-report-open deploy clean req-tracing version

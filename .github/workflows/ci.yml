@@ -420,6 +420,10 @@ jobs:
           name: strictdoc-reqif
           path: reports/strictdoc/reqif-sdoc/
 
+      - name: CHANGELOG für Pages bereitstellen
+        if: github.ref == 'refs/heads/main'
+        run: cp CHANGELOG.md reports/CHANGELOG.md
+
       - name: GitHub Pages vorbereiten
         if: github.ref == 'refs/heads/main'
         uses: actions/configure-pages@v5
@@ -446,6 +450,35 @@ jobs:
           fi
           echo "✅ GitHub Pages erreichbar ($STATUS)"
 
+  # ── Changelog Update ──────────────────────────
+  changelog:
+    name: Update Changelog
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate Unreleased section with git-cliff
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: cliff.toml
+          args: --unreleased --prepend CHANGELOG.md
+        env:
+          OUTPUT: CHANGELOG.md
+          GITHUB_REPO: ${{ github.repository }}
+
+      - name: Commit updated CHANGELOG.md
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git diff --cached --quiet || git commit -m "docs(changelog): update unreleased section [skip ci]"
+          git push
+
   # ── Release ───────────────────────────────────
   release:
     name: GitHub Release
@@ -463,11 +496,23 @@ jobs:
           cd bin
           sha256sum * > checksums.sha256
           cat checksums.sha256
+      - name: Version aus Makefile lesen
+        id: version
+        run: echo "version=$(make version)" >> $GITHUB_OUTPUT
+
+      - name: Changelog-Section für Release extrahieren
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          # Extract section between [VERSION] and the next [
+          awk "/^## \[${VERSION}\]/{found=1; next} found && /^## \[/{exit} found{print}" CHANGELOG.md > release_notes.md
+          echo "Release notes for v${VERSION}:"
+          cat release_notes.md
+
       - uses: softprops/action-gh-release@v2
         with:
           files: |
             bin/bbcli-*
             bin/bbtui-*
             bin/checksums.sha256
-          body_path: CHANGELOG.md
-          generate_release_notes: true
+          body_path: release_notes.md
+          name: "v${{ steps.version.outputs.version }}"

@@ -1,46 +1,77 @@
 # Changelog
 
-Alle wichtigen Änderungen werden in dieser Datei dokumentiert.
-Format: [Semantic Versioning](https://semver.org/lang/de/)
+All notable changes to this project will be documented in this file.
 
----
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+> **Version source of truth:** [`Makefile`](Makefile) — `VERSION` variable.
+> The version is only bumped manually when an official GitHub Release (git tag) is created.
 
 ## [Unreleased]
 
-### Geplant
-- CORS Support für API (API-008)
-- Responsives Layout für Web GUI (GUI-007)
-- PWM und ADC Endpoints
+---
+
+## [1.1.0] — unreleased (next)
+
+### Added
+- GitHub Pages Smoke-Test nach Deploy — prüft HTTP 200 auf Pages-URL (#40)
+- BME280 Hardware-Spec als Markdown: Bosch Datasheet BST-BME280-DS001 rev 1.24 (10 Dateien) + SeenGreat Modul-Doku mit BeagleBone Black Verdrahtung (#39)
+- BeagleBone Black Hardware-Spec als Markdown (11 Kapitel) aus offizieller Dokumentation (#37)
+- StrictDoc Requirements Management mit Custom Grammar: `SYS_REQUIREMENT`, `SW_REQUIREMENT`, `HW_REQUIREMENT`, `SOURCE_CODE`, `TEST_CASE` (#33)
+- StrictDoc Exporte: HTML, PDF (html2pdf), Excel, ReqIF — deployed auf GitHub Pages
+- Pytest JUnit XML Integration für StrictDoc Traceability
+- Setup-Labels Workflow für reproduzierbare GitHub-Label-Konfiguration
+- Automatisiertes Changelog-Handling mit Keep a Changelog Standard (#41)
+- `cliff.toml` Konfiguration für `git-cliff` nach Conventional Commits
+- CI: `git-cliff` generiert `[Unreleased]`-Section automatisch bei Merge auf `main`
+- `VERSION` Variable im Makefile als zentrale Versionsquelle
+
+### Fixed
+- Hardcodierter Fallback-Pfad `/home/claude/` in `generate_reports.py` entfernt (#34)
+- StrictDoc GitHub Pages URL korrigiert (`output/strictdoc/html/`)
+- StrictDoc PDF-Ausgabepfad (`html2pdf/` statt `pdf/`)
+- `continue-on-error` für optionale StrictDoc-Artefakt-Downloads hinzugefügt
+- Source-Traceability auf relevante Verzeichnisse begrenzt (`go-api/`, `c-lib/`, `rust-lib/`, `tests/`)
+- `Makefile` zu StrictDoc `include_source_paths` hinzugefügt (SYS-005)
+
+### CI
+- `report`-Job: Abhängigkeit auf `build-cli` ergänzt
+- `download-artifact` Version auf v8 vereinheitlicht
 
 ---
 
-## [1.0.0] - 2026-03-17
+## [1.0.0] — 2026-03-17
 
-### Neu
-- **HAL Layer**: C + Rust Libraries mit automatischem Fallback
-- **REST API**: Go Server mit BME280, GPIO, UART, SPI Endpoints
-- **BME280**: Vollständiger Bosch Kompensationsalgorithmus
-- **HAL Interface**: Einheitliches Go Interface für C und Rust
-- **Mock Driver**: Fehler-Injektion und Call-Tracking für Tests
-- **CLI (bbcli)**: Cobra CLI mit Shell Completion für Bash/Zsh/Fish
+### Added
+- **HAL Layer**: C + Rust Libraries mit automatischem Backend-Fallback (`HW_BACKEND=auto/c/rust`)
+- **REST API**: Go Server auf Port 5000 mit Endpoints für BME280, GPIO, UART, SPI
+- **BME280**: Vollständiger Bosch Kompensationsalgorithmus (Temperatur, Luftdruck, Luftfeuchtigkeit)
+- **HAL Interface**: Einheitliches Go Interface (`HardwareDriver`) für C, Rust und Mock Backend
+- **Mock Driver**: Fehler-Injektion und Call-Tracking für Hardware-unabhängige Unit Tests
+- **CLI (bbcli)**: Cobra CLI mit Shell Completion (Bash/Zsh/Fish), Cross-Compilation für linux/arm7
 - **TUI (bbtui)**: BubbleTea Terminal UI
 - **Desktop GUI (bbgui)**: Fyne Desktop Applikation
 - **Web GUI**: HTML/JS Dashboard mit SSE Live-Updates
-- **CI/CD**: 7 Drone Pipelines + Nightly
-- **Reports**: HTML Dashboard, PDF, Markdown, JSON
-- **Architektur**: AsciiDoc + 12 PlantUML Diagramme
-- **Quality Gates**: Automatische Schwellenwertprüfung
+- **Test Report Dashboard**: HTML Dashboard mit Testergebnissen, Coverage und Pass-Rate
+- **Trend-Tracking**: GitHub Actions Workflow Summary mit historischem Verlauf
+- **Quality Gates**: Automatische Schwellenwertprüfung (≥90% Pass-Rate, ≥75% Coverage)
+- **Bausteinsicht**: Architektur-Modell als JSONC + exportierte Bilder
+- **CLAUDE.md**: Projektdokumentation für Claude Code
 
-### Technisch
-- Cross-Compilation für ARMv7 (Cortex-A8)
-- Podman rootless Container Runtime
-- Gitea als Git-Server
-- Drone CI für alle Pipelines
-- pytest für Hardware- und API-Tests
+### Fixed
+- Go HAL: Import-Zyklus zwischen `pkg/hal` und `pkg/hal/c` behoben
+- Go Unit Tests: Race condition fixes, Coverage verbessert
+- Test-Ergebnis-Status (`outcome_icon`) für Go-Tests korrigiert
+- Go Version auf 1.23 angehoben
+
+### Dependencies
+- Dependabot: `actions/setup-go@6`, `actions/upload-artifact@7`, `actions/download-artifact@8`, `codecov/codecov-action@5`
+- Dependabot: `fyne.io/fyne/v2` → 2.7.3, `github.com/spf13/viper` → 1.21.0, `github.com/spf13/cobra` aktualisiert
 
 ---
 
-## Versionsformat
+## Version Format
 
 `MAJOR.MINOR.PATCH`
 
@@ -48,5 +79,6 @@ Format: [Semantic Versioning](https://semver.org/lang/de/)
 - **MINOR**: Neue Features (abwärtskompatibel)
 - **PATCH**: Bugfixes
 
-[Unreleased]: https://github.com/user/beaglebone/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/user/beaglebone/releases/tag/v1.0.0
+[Unreleased]: https://github.com/paulefl/beaglebone_black/compare/v1.0.0...HEAD
+[1.1.0]: https://github.com/paulefl/beaglebone_black/compare/v1.0.0...v1.1.0
+[1.0.0]: https://github.com/paulefl/beaglebone_black/releases/tag/v1.0.0
