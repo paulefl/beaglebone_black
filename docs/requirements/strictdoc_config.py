@@ -6,5 +6,7 @@ def create_config():
         project_title="BeagleBone Black Embedded SW",
         project_features=[
             "HTML2PDF",
+            "TRACEABILITY_SCREEN",
+            "TABLE_SCREEN",
         ],
     )
