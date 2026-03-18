@@ -20,14 +20,51 @@ jobs:
           go-version: '1.23'
           cache: true
 
-      - name: Go Unit Tests
-        run: make test-ci
+      - name: Install report tools
+        run: |
+          go install gotest.tools/gotestsum@latest
+          go install github.com/boumenot/gocover-cobertura@latest
 
-      - name: Upload Coverage
+      - name: Go Unit Tests
+        run: |
+          mkdir -p reports
+          cd go-api && gotestsum \
+            --junitfile ../reports/go-tests-junit.xml \
+            --jsonfile  ../reports/go-tests.json \
+            -- \
+            -race -count=3 \
+            -coverprofile=coverage.out \
+            -covermode=atomic \
+            -coverpkg=./pkg/hal/,./pkg/hal/mock/,./pkg/hal/config/ \
+            ./pkg/hal/ ./pkg/hal/mock/ ./pkg/hal/config/
+
+      - name: Coverage Quality Gate
+        run: |
+          total=$(cd go-api && go tool cover -func=coverage.out | grep "^total:" | awk '{print $3}' | tr -d '%')
+          echo "Coverage: ${total}%"
+          awk "BEGIN{exit !($total >= 75)}" || (echo "❌ Coverage gate: ${total}% < 75%"; exit 1)
+          echo "✅ Coverage gate: ${total}% >= 75%"
+
+      - name: Convert coverage to Cobertura XML
+        run: |
+          cp go-api/coverage.out reports/go-coverage.out
+          cd go-api && gocover-cobertura < coverage.out > ../reports/go-coverage.xml
+
+      - name: Upload Coverage (Codecov)
         uses: codecov/codecov-action@v5
         with:
           file: go-api/coverage.out
           flags: hal-unit-tests
+
+      - name: Upload Go reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: go-reports
+          path: |
+            reports/go-tests-junit.xml
+            reports/go-tests.json
+            reports/go-coverage.xml
+            reports/go-coverage.out
 
   # ── Go Lint ──────────────────────────────────
   lint-go:
@@ -78,9 +115,22 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install
-        run: pip install -r tests/requirements-dev.txt
+        run: pip install -r tests/requirements-dev.txt pytest-cov
       - name: Tests
-        run: make test-python
+        run: |
+          mkdir -p reports
+          pytest tests/api/ -v --timeout=10 \
+            --junitxml=reports/pytest-junit.xml \
+            --cov=tests/api \
+            --cov-report=xml:reports/python-coverage.xml \
+            --cov-report=term
+      - name: Upload Python reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-reports
+          path: |
+            reports/pytest-junit.xml
+            reports/python-coverage.xml
 
   # ── CLI Build (Multi-Plattform) ───────────────
   build-cli:
@@ -235,11 +285,42 @@ jobs:
           path: output/strictdoc/reqif-sdoc/
           retention-days: 30
 
+  # ── SonarCloud Quality Analysis ───────────────
+  sonarcloud:
+    name: SonarCloud Analysis
+    runs-on: ubuntu-latest
+    needs: [test-go, test-python]
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # vollständige History für blame/annotations
+
+      - name: Download Go reports
+        uses: actions/download-artifact@v8
+        with:
+          name: go-reports
+          path: reports/
+        continue-on-error: true
+
+      - name: Download Python reports
+        uses: actions/download-artifact@v8
+        with:
+          name: python-reports
+          path: reports/
+        continue-on-error: true
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN:  ${{ secrets.SONAR_TOKEN }}
+
   # ── Test Report + Trend ───────────────────────
   report:
     name: Test Report
     runs-on: ubuntu-latest
-    needs: [test-go, lint-go, test-web, test-scripts, test-python, build-cli, strictdoc]
+    needs: [test-go, lint-go, test-web, test-scripts, test-python, build-cli, strictdoc, sonarcloud]
     if: always()
     permissions:
       contents: write   # für GitHub Pages Push
