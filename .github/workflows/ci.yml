@@ -166,6 +166,174 @@ jobs:
           name: ${{ matrix.name }}
           path: bin/${{ matrix.name }}
 
+  # ── Test Report + Trend ───────────────────────
+  report:
+    name: Test Report
+    runs-on: ubuntu-latest
+    needs: [test-go, lint-go, test-web, test-scripts, test-python, build-cli]
+    if: always()
+    permissions:
+      contents: write   # für GitHub Pages Push
+      pages:    write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.23'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python deps
+        run: pip install -r tests/requirements-dev.txt reportlab
+
+      # ── Trend: Vorherige Daten aus Cache laden ────────────────────────────────
+      # restore-keys matcht den letzten gespeicherten Eintrag (neuester zuerst)
+      - name: Trend-Cache laden
+        uses: actions/cache/restore@v4
+        with:
+          path: reports/test_trend.json
+          key:          test-trend-${{ github.run_number }}
+          restore-keys: test-trend-
+
+      - name: CLI Binary laden
+        uses: actions/download-artifact@v8
+        with:
+          name: bbcli-linux-amd64
+          path: bin/
+      - run: chmod +x bin/bbcli-linux-amd64
+
+      - name: Test Report
+        run: make test-report
+        continue-on-error: true   # Report auch bei fehlgeschlagenen Tests erstellen
+
+      # ── Trend: Aktuellen Build eintragen ─────────────────────────────────────
+      - name: Trend aktualisieren
+        run: |
+          python3 << 'EOF'
+          import json, os
+          from datetime import datetime, timezone
+
+          total = passed = failed = 0
+
+          # Go Tests (JSON-Lines Format)
+          if os.path.exists("reports/go-tests.json"):
+              for line in open("reports/go-tests.json"):
+                  try:
+                      e = json.loads(line)
+                      if e.get("Test"):           # nur echte Test-Zeilen, keine Package-Zeilen
+                          if   e.get("Action") == "pass": passed += 1; total += 1
+                          elif e.get("Action") == "fail": failed += 1; total += 1
+                  except Exception:
+                      pass
+
+          # Python Tests (pytest-json-report Format)
+          for f in ["reports/pytest-api.json", "reports/pytest-cli.json",
+                    "reports/pytest-hardware.json"]:
+              if os.path.exists(f):
+                  try:
+                      s  = json.load(open(f)).get("summary", {})
+                      p  = s.get("passed", 0)
+                      fl = s.get("failed", 0) + s.get("error", 0)
+                      passed += p; failed += fl; total += p + fl
+                  except Exception:
+                      pass
+
+          # Go Coverage aus coverage.out
+          avg_cov = 0.0
+          if os.path.exists("reports/go-coverage.out"):
+              covs = []
+              for line in open("reports/go-coverage.out"):
+                  if line.startswith("mode:") or not line.strip():
+                      continue
+                  try:
+                      covs.append(float(line.split()[2]))
+                  except Exception:
+                      pass
+              avg_cov = round(sum(covs) / len(covs), 1) if covs else 0.0
+
+          entry = {
+              "timestamp":      datetime.now(timezone.utc).isoformat(),
+              "build":          os.environ.get("GITHUB_RUN_NUMBER", "0"),
+              "branch":         os.environ.get("GITHUB_REF_NAME",   "main"),
+              "commit":         os.environ.get("GITHUB_SHA", "")[:8],
+              "total_tests":    total,
+              "bestanden":      passed,
+              "fehlgeschlagen": failed,
+              "erfolgsrate":    round(passed / total * 100, 1) if total else 0.0,
+              "avg_coverage":   avg_cov,
+          }
+
+          trend_file = "reports/test_trend.json"
+          trend = json.load(open(trend_file)) if os.path.exists(trend_file) else []
+          trend.append(entry)
+          trend = trend[-100:]          # maximal 100 Einträge
+          os.makedirs("reports", exist_ok=True)
+          json.dump(trend, open(trend_file, "w"), indent=2)
+
+          print(f"✅ Run #{entry['build']} | "
+                f"Tests: {passed}/{total} ({entry['erfolgsrate']}%) | "
+                f"Coverage: {avg_cov}%  [{len(trend)} Trend-Einträge]")
+          EOF
+
+      # ── Trend in GitHub Actions Summary schreiben ────────────────────────────
+      - name: Trend Summary schreiben
+        if: always()
+        run: python3 scripts/trend_summary.py
+
+      # ── Trend-Cache speichern (überschreibt nicht, legt neuen Eintrag an) ─────
+      - name: Trend-Cache speichern
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: reports/test_trend.json
+          key:  test-trend-${{ github.run_number }}
+
+      # ── Dashboard mit Trend-Tab neu generieren ───────────────────────────────
+      - name: Dashboard mit Trend generieren
+        if: always()
+        run: |
+          if [ -f reports/requirements.json ]; then
+            python3 reports/generate_reports.py \
+              --requirements reports/requirements.json \
+              --output       reports \
+              --trend        reports/test_trend.json
+            echo "✅ Dashboard mit Trend generiert"
+          else
+            echo "ℹ️  Kein requirements.json → Trend-Datei wird als Artefakt hochgeladen"
+          fi
+
+      # ── Artefakte hochladen ───────────────────────────────────────────────────
+      - name: Upload Reports
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: test-reports-${{ github.run_number }}
+          path: |
+            reports/*.json
+            reports/*.html
+            reports/*.out
+            reports/shell-syntax.txt
+          retention-days: 30
+
+      # ── GitHub Pages: Dashboard veröffentlichen (nur main) ────────────────────
+      - name: GitHub Pages vorbereiten
+        if: github.ref == 'refs/heads/main'
+        uses: actions/configure-pages@v5
+
+      - name: Reports für Pages hochladen
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: reports/
+
+      - name: Deploy zu GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        uses: actions/deploy-pages@v4
+
   # ── Release ───────────────────────────────────
   release:
     name: GitHub Release
