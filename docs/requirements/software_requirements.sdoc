@@ -1,9 +1,5 @@
 [DOCUMENT]
 TITLE: Software Requirements
-UID: SWR
-
-[SECTION]
-TITLE: HAL Interface
 
 [REQUIREMENT]
 UID: SWR-001
@@ -35,11 +31,6 @@ RELATIONS:
 - TYPE: File
   VALUE: go-api/pkg/hal/hal_test.go
 
-[/SECTION]
-
-[SECTION]
-TITLE: Architektur
-
 [REQUIREMENT]
 UID: SWR-004
 TITLE: Hardware-Zugriff nur in C und Rust
@@ -63,5 +54,3 @@ RELATIONS:
   VALUE: go-api/pkg/hal/loader/factory.go
 - TYPE: File
   VALUE: go-api/pkg/hal/hal_test.go
-
-[/SECTION]

@@ -1,9 +1,5 @@
 [DOCUMENT]
 TITLE: System Requirements
-UID: SYS
-
-[SECTION]
-TITLE: Zielplattform
 
 [REQUIREMENT]
 UID: SYS-001
@@ -20,11 +16,6 @@ STATEMENT: Das System muss unter Linux (Debian) auf dem BeagleBone Black betrieb
 RELATIONS:
 - TYPE: File
   VALUE: go-api/cmd/main.go
-
-[/SECTION]
-
-[SECTION]
-TITLE: Schnittstellen
 
 [REQUIREMENT]
 UID: SYS-003
@@ -53,5 +44,3 @@ STATEMENT: Das System muss aus einer x86-64 Entwicklungsumgebung heraus für ARM
 RELATIONS:
 - TYPE: File
   VALUE: Makefile
-
-[/SECTION]
