@@ -1,0 +1,71 @@
+[DOCUMENT]
+TITLE: Hardware Driver Requirements
+UID: HW-DRV
+
+[SECTION]
+TITLE: BME280 Sensor
+
+[REQUIREMENT]
+UID: HW-DRV-001
+TITLE: BME280 Messwerte
+STATEMENT: Der BME280-Treiber muss Temperatur (°C), Luftfeuchtigkeit (%) und Luftdruck (hPa) auslesen und zurückgeben können.
+RELATIONS:
+- TYPE: File
+  VALUE: c-lib/include/bme280.h
+- TYPE: File
+  VALUE: rust-lib/src/bme280.rs
+- TYPE: File
+  VALUE: go-api/pkg/hal/hal_test.go
+
+[/SECTION]
+
+[SECTION]
+TITLE: GPIO
+
+[REQUIREMENT]
+UID: HW-DRV-002
+TITLE: GPIO Lesen und Schreiben
+STATEMENT: Der GPIO-Treiber muss digitale Pins lesen, schreiben und die Richtung (Input/Output) konfigurieren können.
+RELATIONS:
+- TYPE: File
+  VALUE: c-lib/include/gpio.h
+- TYPE: File
+  VALUE: rust-lib/src/gpio.rs
+- TYPE: File
+  VALUE: go-api/pkg/hal/hal_test.go
+
+[/SECTION]
+
+[SECTION]
+TITLE: UART
+
+[REQUIREMENT]
+UID: HW-DRV-003
+TITLE: UART Senden und Empfangen
+STATEMENT: Der UART-Treiber muss Datenpakete senden und empfangen sowie die Verbindung ordnungsgemäß schließen können.
+RELATIONS:
+- TYPE: File
+  VALUE: c-lib/include/uart.h
+- TYPE: File
+  VALUE: rust-lib/src/uart.rs
+- TYPE: File
+  VALUE: go-api/pkg/hal/hal_test.go
+
+[/SECTION]
+
+[SECTION]
+TITLE: SPI
+
+[REQUIREMENT]
+UID: HW-DRV-004
+TITLE: SPI Loopback Transfer
+STATEMENT: Der SPI-Treiber muss bidirektionale Datentransfers (Loopback) unterstützen und übertragene Bytes korrekt zurückliefern.
+RELATIONS:
+- TYPE: File
+  VALUE: c-lib/include/spi.h
+- TYPE: File
+  VALUE: rust-lib/src/spi.rs
+- TYPE: File
+  VALUE: go-api/pkg/hal/hal_test.go
+
+[/SECTION]

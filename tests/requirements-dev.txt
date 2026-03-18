@@ -2,3 +2,4 @@ pytest
 pytest-timeout
 pytest-json-report
 requests
+strictdoc>=0.0.50
