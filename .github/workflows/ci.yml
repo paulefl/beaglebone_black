@@ -246,6 +246,10 @@ jobs:
               lines.append(f"| `{r['uid']}` | {r['title']} | `{r['doc']}` | {files} |")
 
           summary = "\n".join(lines)
+          pages_url = "https://paulefl.github.io/beaglebone_black/strictdoc/"
+          lines.append(f"\n🔗 [StrictDoc HTML-Dokumentation öffnen]({pages_url}) _(nur nach main-Deploy verfügbar)_")
+
+          summary = "\n".join(lines)
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
               f.write(summary + "\n")
           print(summary)
@@ -254,7 +258,7 @@ jobs:
       - name: Upload StrictDoc HTML + PDF
         uses: actions/upload-artifact@v7
         with:
-          name: strictdoc-docs-${{ github.run_number }}
+          name: strictdoc-html
           path: output/strictdoc/
           retention-days: 30
 
@@ -412,6 +416,13 @@ jobs:
           retention-days: 30
 
       # ── GitHub Pages: Dashboard veröffentlichen (nur main) ────────────────────
+      - name: StrictDoc HTML laden
+        if: github.ref == 'refs/heads/main'
+        uses: actions/download-artifact@v8
+        with:
+          name: strictdoc-html
+          path: reports/strictdoc/
+
       - name: GitHub Pages vorbereiten
         if: github.ref == 'refs/heads/main'
         uses: actions/configure-pages@v5
