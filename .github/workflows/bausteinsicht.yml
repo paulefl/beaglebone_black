@@ -20,40 +20,44 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Clone Bausteinsicht repository
-        uses: actions/checkout@v4
-        with:
-          repository: docToolchain/Bausteinsicht
-          path: scripts/.bausteinsicht-repo
-          fetch-depth: 1
-
-      - name: Build Bausteinsicht container image
-        run: scripts/bausteinsicht-container.sh build
+      - name: Make bausteinsicht binary executable
+        run: chmod +x scripts/bausteinsicht
 
       - name: Validate model
-        run: scripts/bausteinsicht-container.sh validate
+        run: scripts/bausteinsicht validate --model arch/model/beaglebone_black.jsonc
 
       - name: Create export directories
-        run: mkdir -p arch/model/export/png arch/model/export/plantuml arch/model/export/mermaid arch/model/export/table
-
-      - name: Export PNG diagrams
-        continue-on-error: true  # draw.io requires Xvfb/GPU — may not be available in CI
-        run: scripts/bausteinsicht-container.sh export --output /model/export/png
+        run: mkdir -p arch/model/export/plantuml arch/model/export/mermaid arch/model/export/table
 
       - name: Export PlantUML C4 diagrams
         run: |
-          scripts/bausteinsicht-container.sh export-diagram \
-            --diagram-format plantuml --output /model/export/plantuml
+          scripts/bausteinsicht export-diagram \
+            --model arch/model/beaglebone_black.jsonc \
+            --diagram-format plantuml \
+            --output arch/model/export/plantuml
 
       - name: Export Mermaid C4 diagrams
         run: |
-          scripts/bausteinsicht-container.sh export-diagram \
-            --diagram-format mermaid --output /model/export/mermaid
+          scripts/bausteinsicht export-diagram \
+            --model arch/model/beaglebone_black.jsonc \
+            --diagram-format mermaid \
+            --output arch/model/export/mermaid
 
       - name: Export element table (Markdown)
         run: |
-          scripts/bausteinsicht-container.sh export-table \
-            --table-format md --combined --output /model/export/table
+          scripts/bausteinsicht export-table \
+            --model arch/model/beaglebone_black.jsonc \
+            --table-format md \
+            --combined \
+            --output arch/model/export/table
+
+      - name: Export PNG diagrams
+        continue-on-error: true  # draw.io requires Xvfb/GPU
+        run: |
+          mkdir -p arch/model/export/png
+          scripts/bausteinsicht export \
+            --model arch/model/beaglebone_black.jsonc \
+            --output arch/model/export/png
 
       - name: Commit export changes
         if: github.event_name != 'pull_request'
