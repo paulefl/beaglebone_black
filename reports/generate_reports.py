@@ -11,8 +11,8 @@ from collections import defaultdict
 
 # ── CLI-Argumente ──────────────────────────
 _parser = argparse.ArgumentParser(description="BeagleBone Black Report Generator")
-_parser.add_argument("--output", default="/mnt/user-data/outputs",
-                     help="Ausgabeverzeichnis (default: /mnt/user-data/outputs)")
+_parser.add_argument("--output", default=os.path.dirname(__file__) or ".",
+                     help="Ausgabeverzeichnis (default: Verzeichnis dieses Scripts)")
 _parser.add_argument("--trend", default=None,
                      help="Pfad zur test_trend.json Datei (optional)")
 _parser.add_argument("--requirements", default=None,
@@ -25,9 +25,10 @@ REQUIREMENTS = _args.requirements or os.path.join(
     os.path.dirname(__file__) or ".", "requirements.json")
 
 # ── Daten laden ──────────────────────────
-req_path = REQUIREMENTS if os.path.exists(REQUIREMENTS) \
-    else "/home/claude/reports/requirements.json"
-with open(req_path) as f:
+if not os.path.exists(REQUIREMENTS):
+    print(f"❌ requirements.json nicht gefunden: {REQUIREMENTS}", file=sys.stderr)
+    sys.exit(1)
+with open(REQUIREMENTS) as f:
     data = json.load(f)
 
 # ── Trend-Daten laden (optional) ──────────
