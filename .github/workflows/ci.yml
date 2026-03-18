@@ -204,7 +204,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: strictdoc-html
-          path: output/strictdoc/
+          path: output/strictdoc/html/
           retention-days: 30
 
   # ── Test Report + Trend ───────────────────────
