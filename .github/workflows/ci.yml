@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: paulefl/beaglebone-tooling/.github/actions/go-test@v1.1.0
+      - uses: paulefl/beaglebone-tooling/.github/actions/go-test@v1.1.1
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -30,7 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: paulefl/beaglebone-tooling/.github/actions/c-test@v1.1.0
+      - uses: paulefl/beaglebone-tooling/.github/actions/c-test@v1.1.1
 
   # ── Go Lint ──────────────────────────────────
   lint-go:
@@ -65,11 +65,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: paulefl/beaglebone-tooling/.github/actions/download-tooling@v1.1.0
+      - uses: paulefl/beaglebone-tooling/.github/actions/download-tooling@v1.1.1
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: paulefl/beaglebone-tooling/.github/actions/shellcheck-sarif@v1.1.0
+      - uses: paulefl/beaglebone-tooling/.github/actions/shellcheck-sarif@v1.1.1
 
   # ── Python Tests (API Mock) ───────────────────
   test-python:
@@ -190,7 +190,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: paulefl/beaglebone-tooling/.github/actions/download-tooling@v1.1.0
+      - uses: paulefl/beaglebone-tooling/.github/actions/download-tooling@v1.1.1
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -342,7 +342,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: paulefl/beaglebone-tooling/.github/actions/download-tooling@v1.1.0
+      - uses: paulefl/beaglebone-tooling/.github/actions/download-tooling@v1.1.1
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
