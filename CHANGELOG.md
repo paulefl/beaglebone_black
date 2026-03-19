@@ -7,28 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+### Software-Änderungen
 
 - Podman container script and CI workflow (#45) (#46)
 - SonarCloud Integration für Quality Monitoring (#47) (#48)
 - start_ticket Skill zeigt automatisch nummerierte Issue-Liste bei leerem Argument (#59)
 - start_ticket automatisches PR-Review nach CI: Diff-Analyse, Findings-Klassifizierung, Bot-Token-Support für Approval (#62)
-
-### CI
-
-- Use container script instead of inline podman commands
-- Separate build step from run commands
-- Add export-diagram, export-table and export-png steps
-- Commit export changes back to repo if files changed
-- Trigger only on beaglebone_black.jsonc changes
-- Trigger SonarCloud verification
-
-### Documentation
-
-- Update unreleased section [skip ci]
-
-### Fixed
-
 - Mount model dir rw, fix export paths, add export dirs step
 - Drop container approach, run binary directly in CI
 - Install draw.io CLI and use xvfb-run for PNG export
@@ -36,6 +20,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replace fixed sleep with retry loop for Pages smoke-test (max 3min)
 - Git-cliff write to temp file then prepend to CHANGELOG.md
 - Copy bb_dashboard.html to index.html for GitHub Pages
+
+### Infrastruktur & Tooling
+
+- Use container script instead of inline podman commands
+- Separate build step from run commands
+- Add export-diagram, export-table and export-png steps
+- Commit export changes back to repo if files changed
+- Trigger only on beaglebone_black.jsonc changes
+- Trigger SonarCloud verification
+- Update unreleased section [skip ci]
+- Gruppiere Changelog nach Software-Änderungen und Infrastruktur & Tooling (#60)
 
 ---
 
