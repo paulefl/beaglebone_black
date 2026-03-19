@@ -79,6 +79,31 @@ RELATIONS:
   VALUE: go-api/pkg/hal/hal_test.go
 
 [SW_REQUIREMENT]
+UID: SWR-008
+TITLE: Keine flag.Parse() in Library-Packages
+STATEMENT: Library-Packages dürfen flag.Parse() nicht aufrufen und keine Flags im globalen flag.CommandLine registrieren. Konfigurationswerte müssen ausschließlich über Umgebungsvariablen oder Dependency Injection übergeben werden.
+STATUS: Active
+PRIORITY: High
+RELATIONS:
+- TYPE: Parent
+  VALUE: SWR-002
+- TYPE: File
+  VALUE: go-api/pkg/hal/config/config.go
+- TYPE: File
+  VALUE: go-api/pkg/hal/config/config_test.go
+
+[TEST_CASE]
+UID: TC-008
+TITLE: LoadConfig registriert keine Flags im globalen FlagSet
+STATEMENT: Verifiziert, dass LoadConfig() keine Flags (backend, uart, i2c) im globalen flag.CommandLine registriert und flag.Parse() nicht aufruft.
+TEST_TYPE: Unit
+RELATIONS:
+- TYPE: Parent
+  VALUE: SWR-008
+- TYPE: File
+  VALUE: go-api/pkg/hal/config/config_test.go
+
+[SW_REQUIREMENT]
 UID: SWR-007
 TITLE: BME280 Stream Flusher-Prüfung
 STATEMENT: Der BME280StreamHandler muss vor dem Streaming prüfen ob der ResponseWriter das http.Flusher-Interface implementiert. Falls nicht, muss HTTP 500 zurückgegeben werden anstatt einen Panic auszulösen.
