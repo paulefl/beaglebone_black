@@ -409,9 +409,10 @@ jobs:
 
       - name: Arrange C reports
         run: |
-          mkdir -p reports
-          cp c-reports/c-coverage.info reports/c-coverage.info 2>/dev/null || true
-          cp c-reports/compile_commands.json c-lib/compile_commands.json 2>/dev/null || true
+          mkdir -p reports c-lib
+          # upload-artifact preserves directory structure
+          cp c-reports/reports/c-coverage.info reports/c-coverage.info 2>/dev/null || true
+          cp c-reports/c-lib/compile_commands.json c-lib/compile_commands.json 2>/dev/null || true
 
       - name: Download ShellCheck SARIF
         uses: actions/download-artifact@v8
