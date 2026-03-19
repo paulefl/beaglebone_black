@@ -103,6 +103,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ShellCheck SARIF Report für SonarCloud (#55) (#68) (#68)
 - Deaktiviere C/C++ SonarCloud-Analyse + verbessertes Error Reporting (#70) (#70)
 - POST /api/v1/backend wechselt jetzt tatsächlich den HAL-Backend (#72) (#72)
+- fix(api): POST-Handler geben HTTP 400 bei ungültigem JSON zurück, REQ HW-API-007 (#75) (#75)
 
 
 # Changelog
