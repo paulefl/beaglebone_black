@@ -25,6 +25,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Erstelle PR statt direktem Push auf main (branch protection fix) (#66) (#66)
 - Update unreleased section [skip ci] (#67) (#67)
 - Update unreleased section [skip ci] (#69) (#69)
+- Update unreleased section [skip ci] (#71) (#71)
+
+### Software-Änderungen
+
+- Podman container script and CI workflow (#45) (#46) (#46)
+- Mount model dir rw, fix export paths, add export dirs step 
+- Disable git credential prompt for public repo clone 
+- Bypass git credential helper for public repo clone 
+- Move git clone to workflow step, script only builds image 
+- Use actions/checkout to clone Bausteinsicht repo 
+- Drop container approach, run binary directly in CI 
+- Install draw.io CLI and use xvfb-run for PNG export 
+- SonarCloud Integration für Quality Monitoring (#47) (#48) (#48)
+- Remove duplicate OUTPUT env for git-cliff, increase Pages smoke-test sleep to 30s 
+- Replace fixed sleep with retry loop for Pages smoke-test (max 3min) 
+- Git-cliff write to temp file then prepend to CHANGELOG.md 
+- Copy bb_dashboard.html to index.html for GitHub Pages 
+- Start_ticket zeigt automatisch Issue-Liste bei leerem Argument (#61) (#61)
+- Automatisches PR-Review mit Bot-Token-Support in start_ticket (#64) (#64)
+- ShellCheck SARIF Report für SonarCloud (#55) (#68) (#68)
+- Deaktiviere C/C++ SonarCloud-Analyse + verbessertes Error Reporting (#70) (#70)
+- POST /api/v1/backend wechselt jetzt tatsächlich den HAL-Backend (#72) (#72)
+
+
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Infrastruktur & Tooling
+
+- Use container script instead of inline podman commands 
+- Separate build step from run commands 
+- Add export-diagram, export-table and export-png steps 
+- Commit export changes back to repo if files changed 
+- Update exported diagrams [skip ci] 
+- Update exported diagrams [skip ci] 
+- Trigger only on beaglebone_black.jsonc changes 
+- Trigger SonarCloud verification 
+- Update unreleased section [skip ci] 
+- Update unreleased section [skip ci] 
+- Update unreleased section [skip ci] 
+- Update unreleased section [skip ci] 
+- Gruppierung nach Software-Änderungen und Infrastruktur & Tooling (#65) (#65)
+- Erstelle PR statt direktem Push auf main (branch protection fix) (#66) (#66)
+- Update unreleased section [skip ci] (#67) (#67)
+- Update unreleased section [skip ci] (#69) (#69)
 
 ### Software-Änderungen
 
