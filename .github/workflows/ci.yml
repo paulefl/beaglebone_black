@@ -101,7 +101,7 @@ jobs:
       - name: Run C tests
         run: make -C c-lib test
 
-      - uses: paulefl/beaglebone-tooling/.github/actions/c-coverage@main
+      - uses: paulefl/beaglebone-tooling/.github/actions/c-coverage@v1.1.0
         with:
           source-dir: c-lib/
           output-file: reports/c-coverage.info
