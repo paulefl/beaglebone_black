@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Podman container script and CI workflow (#45) (#46)
 - SonarCloud Integration für Quality Monitoring (#47) (#48)
 - start_ticket Skill zeigt automatisch nummerierte Issue-Liste bei leerem Argument (#59)
+- start_ticket automatisches PR-Review nach CI: Diff-Analyse, Findings-Klassifizierung, Bot-Token-Support für Approval (#62)
 
 ### CI
 
