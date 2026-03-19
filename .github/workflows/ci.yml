@@ -82,6 +82,25 @@ jobs:
             reports/go-coverage.xml
             reports/go-coverage.out
 
+  # ── C Coverage ───────────────────────────────
+  test-c:
+    name: C Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build c-lib with coverage
+        run: make -C c-lib coverage CC=gcc
+
+      - name: Run C tests
+        run: make -C c-lib test
+
+      - uses: paulefl/beaglebone-tooling/.github/actions/c-coverage@main
+        with:
+          source-dir: c-lib/
+          output-file: reports/c-coverage.info
+          filter-patterns: "'/usr/*'"
+
   # ── Go Lint ──────────────────────────────────
   lint-go:
     name: Go Lint
@@ -345,7 +364,7 @@ jobs:
   sonarcloud:
     name: SonarCloud Analysis
     runs-on: ubuntu-latest
-    needs: [test-go, test-python]
+    needs: [test-go, test-c, test-python]
     if: always()
     steps:
       - uses: actions/checkout@v4
@@ -363,6 +382,13 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: python-reports
+          path: reports/
+        continue-on-error: true
+
+      - name: Download C coverage
+        uses: actions/download-artifact@v8
+        with:
+          name: c-coverage
           path: reports/
         continue-on-error: true
 
