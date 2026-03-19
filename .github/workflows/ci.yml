@@ -52,7 +52,7 @@ jobs:
 
       - name: Convert JUnit XML to SonarQube Generic Test Execution format
         run: |
-          python3 scripts/junit_to_sonar_generic.py \
+          python3 tooling/junit_to_sonar_generic.py \
             reports/go-tests-junit.xml \
             reports/go-tests-sonar.xml
 
@@ -122,9 +122,9 @@ jobs:
           FINDINGS=$(find . -name "*.sh" -not -path "./.git/*" \
             | xargs shellcheck --format=json 2>/dev/null || true)
           if [ -z "$FINDINGS" ] || [ "$FINDINGS" = "[]" ]; then
-            echo "[]" | python3 scripts/shellcheck_to_sarif.py > reports/shell-lint.sarif
+            echo "[]" | python3 tooling/shellcheck_to_sarif.py > reports/shell-lint.sarif
           else
-            echo "$FINDINGS" | python3 scripts/shellcheck_to_sarif.py > reports/shell-lint.sarif
+            echo "$FINDINGS" | python3 tooling/shellcheck_to_sarif.py > reports/shell-lint.sarif
           fi
           echo "✅ ShellCheck SARIF: reports/shell-lint.sarif"
 
@@ -284,7 +284,7 @@ jobs:
 
       - name: Traceability Report in Workflow Summary schreiben
         if: always()
-        run: python3 scripts/req_tracing_summary.py
+        run: python3 tooling/req_tracing_summary.py
 
       - name: Upload StrictDoc HTML (GitHub Pages)
         uses: actions/upload-artifact@v7
@@ -504,7 +504,7 @@ jobs:
       # ── Trend in GitHub Actions Summary schreiben ────────────────────────────
       - name: Trend Summary schreiben
         if: always()
-        run: python3 scripts/trend_summary.py
+        run: python3 tooling/trend_summary.py
 
       # ── Trend-Cache speichern (überschreibt nicht, legt neuen Eintrag an) ─────
       - name: Trend-Cache speichern
@@ -546,7 +546,7 @@ jobs:
         if: always()
         run: |
           if [ -f reports/requirements.json ]; then
-            python3 scripts/generate_reports.py \
+            python3 tooling/generate_reports.py \
               --requirements reports/requirements.json \
               --results      reports/test_results.json \
               --output       reports \

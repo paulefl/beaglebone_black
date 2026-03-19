@@ -108,7 +108,7 @@ steps:
       - name: report-workspace
         path: /workspace
     commands:
-      - python3 scripts/collect_results.py
+      - python3 tooling/collect_results.py
           --workspace /workspace
           --requirements requirements.json
           --output /workspace/test_results.json
@@ -126,7 +126,7 @@ steps:
     commands:
       - pip install reportlab jinja2
           --break-system-packages -q
-      - python3 scripts/generate_reports.py
+      - python3 tooling/generate_reports.py
           --results /workspace/test_results.json
           --output /workspace/reports
       - |
@@ -148,7 +148,7 @@ steps:
         path: /workspace
     commands:
       - pip install reportlab --break-system-packages -q
-      - python3 arch/generate_arch.py
+      - python3 tooling/generate_arch.py
           --output /workspace/arch
       - |
         for f in sw_architektur.html sw_architektur.pdf; do
@@ -195,7 +195,7 @@ latest/download/plantuml.jar
           asciidoctor-diagram rouge --quiet
 
       # ── Build Script ausführen ─────────────────
-      - chmod +x scripts/build_adoc.sh
+      - chmod +x tooling/build_adoc.sh
       - |
         echo "════════════════════════════════════════"
         echo "  Suche .adoc Dateien mit .buildadoc..."
