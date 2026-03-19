@@ -50,6 +50,12 @@ jobs:
           cp go-api/coverage.out reports/go-coverage.out
           cd go-api && gocover-cobertura < coverage.out > ../reports/go-coverage.xml
 
+      - name: Convert JUnit XML to SonarQube Generic Test Execution format
+        run: |
+          python3 scripts/junit_to_sonar_generic.py \
+            reports/go-tests-junit.xml \
+            reports/go-tests-sonar.xml
+
       - name: Upload Coverage (Codecov)
         uses: codecov/codecov-action@v5
         with:
@@ -62,6 +68,7 @@ jobs:
           name: go-reports
           path: |
             reports/go-tests-junit.xml
+            reports/go-tests-sonar.xml
             reports/go-tests.json
             reports/go-coverage.xml
             reports/go-coverage.out
@@ -98,12 +105,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Bash Syntax
         run: |
           find . -name "*.sh" | while read -r f; do
             bash -n "$f" && echo "  ✅ $f" || { echo "  ❌ $f"; exit 1; }
           done
           echo "✅ Script Syntax OK"
+
+      - name: Install shellcheck
+        run: sudo apt-get install -y shellcheck
+
+      - name: ShellCheck SARIF
+        run: |
+          mkdir -p reports
+          FINDINGS=$(find . -name "*.sh" -not -path "./.git/*" \
+            | xargs shellcheck --format=json 2>/dev/null || true)
+          if [ -z "$FINDINGS" ] || [ "$FINDINGS" = "[]" ]; then
+            echo "[]" | python3 scripts/shellcheck_to_sarif.py > reports/shell-lint.sarif
+          else
+            echo "$FINDINGS" | python3 scripts/shellcheck_to_sarif.py > reports/shell-lint.sarif
+          fi
+          echo "✅ ShellCheck SARIF: reports/shell-lint.sarif"
+
+      - name: Upload ShellCheck SARIF
+        uses: actions/upload-artifact@v4
+        with:
+          name: shell-sarif
+          path: reports/shell-lint.sarif
 
   # ── Python Tests (API Mock) ───────────────────
   test-python:
@@ -307,6 +336,13 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: python-reports
+          path: reports/
+        continue-on-error: true
+
+      - name: Download ShellCheck SARIF
+        uses: actions/download-artifact@v8
+        with:
+          name: shell-sarif
           path: reports/
         continue-on-error: true
 
