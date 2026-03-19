@@ -356,6 +356,18 @@ run_pytest_suite "3. Python CLI Tests"      "$REPO_ROOT/tests/cli/"      "$REPOR
 run_pytest_suite "4. Python Hardware Tests" "$REPO_ROOT/tests/hardware/" "$REPORT_DIR/pytest-hardware.json"
 run_shell_syntax
 run_html_validation
+
+# ── Test-Ergebnisse in requirements.json aktualisieren ───────────────────────
+section_header "7. Requirements Tracing aktualisieren"
+if python3 "$REPO_ROOT/scripts/collect_results.py" \
+    --workspace "$REPORT_DIR" \
+    --requirements "$REPO_ROOT/reports/requirements.json" \
+    --output "$REPORT_DIR/test_results.json"; then
+    echo -e "  ${GREEN}✅${NC} requirements.json aktualisiert"
+else
+    echo -e "  ${YELLOW}⚠${NC}  collect_results.py fehlgeschlagen — requirements.json unverändert"
+fi
+
 generate_github_summary
 print_summary
 

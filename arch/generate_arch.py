@@ -1185,7 +1185,7 @@ EOF
       - pip install reportlab jinja2
           --break-system-packages -q
       # Report Generator ausführen
-      - python3 reports/generate_reports.py
+      - python3 scripts/generate_reports.py
       # Architektur generieren
       - python3 arch/generate_arch.py
       # Alle Reports auflisten
@@ -1248,6 +1248,11 @@ trend_file = "reports/test_trend.json"
 # Aktuelle Statistiken
 with open("requirements.json") as f:
     data = json.load(f)
+if os.path.exists("/workspace/test_results.json"):
+    with open("/workspace/test_results.json") as f:
+        data["test_ergebnisse"] = json.load(f).get("test_ergebnisse", [])
+else:
+    data.setdefault("test_ergebnisse", [])
 
 tests      = data["test_ergebnisse"]
 total      = len(tests)

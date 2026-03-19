@@ -546,8 +546,9 @@ jobs:
         if: always()
         run: |
           if [ -f reports/requirements.json ]; then
-            python3 reports/generate_reports.py \
+            python3 scripts/generate_reports.py \
               --requirements reports/requirements.json \
+              --results      reports/test_results.json \
               --output       reports \
               --trend        reports/test_trend.json
             echo "✅ Dashboard mit Trend generiert"
