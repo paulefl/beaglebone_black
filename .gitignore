@@ -17,6 +17,10 @@ Cargo.lock
 # ── C ────────────────────────────────────
 c-lib/src/*.o
 c-lib/libhardware.so
+c-lib/tests/test_runner
+c-lib/**/*.gcda
+c-lib/**/*.gcno
+c-lib/**/*.gcov
 
 # ── Python ───────────────────────────────
 __pycache__/
