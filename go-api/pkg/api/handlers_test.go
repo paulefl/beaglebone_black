@@ -43,7 +43,7 @@ type nonFlushingWriter struct {
 func newNonFlushingWriter() *nonFlushingWriter {
 	return &nonFlushingWriter{header: make(http.Header)}
 }
-func (w *nonFlushingWriter) Header() http.Header        { return w.header }
+func (w *nonFlushingWriter) Header() http.Header         { return w.header }
 func (w *nonFlushingWriter) Write(b []byte) (int, error) { return w.body.Write(b) }
 func (w *nonFlushingWriter) WriteHeader(code int)        { w.code = code }
 
