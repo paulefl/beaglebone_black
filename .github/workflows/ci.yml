@@ -15,9 +15,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: paulefl/beaglebone-tooling/.github/actions/go-test@v1.1.1
+      - uses: paulefl/beaglebone-tooling/.github/actions/download-tooling@v1.1.1
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: paulefl/beaglebone-tooling/.github/actions/go-test@v1.1.1
         with:
           coverpkg: './pkg/hal/,./pkg/hal/mock/,./pkg/hal/config/'
           test-packages: './pkg/hal/ ./pkg/hal/mock/ ./pkg/hal/config/'
