@@ -30,32 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install bear + lcov
-        run: sudo apt-get install -y --no-install-recommends bear lcov
-
-      - name: Build c-lib with coverage + Compilation Database
-        run: |
-          mkdir -p reports
-          bear --output c-lib/compile_commands.json -- \
-            make -C c-lib coverage CC=gcc
-
-      - name: Run C tests
-        run: make -C c-lib test
-
-      - uses: paulefl/beaglebone-tooling/.github/actions/c-coverage@v1.1.0
-        with:
-          source-dir: c-lib/
-          output-file: reports/c-coverage.info
-          filter-patterns: "'/usr/*'"
-          upload-artifact: 'false'
-
-      - name: Upload C reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: c-reports
-          path: |
-            reports/c-coverage.info
-            c-lib/compile_commands.json
+      - uses: paulefl/beaglebone-tooling/.github/actions/c-test@v1.1.0
 
   # ── Go Lint ──────────────────────────────────
   lint-go:
@@ -94,33 +69,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Bash Syntax
-        run: |
-          find . -name "*.sh" | while read -r f; do
-            bash -n "$f" && echo "  ✅ $f" || { echo "  ❌ $f"; exit 1; }
-          done
-          echo "✅ Script Syntax OK"
-
-      - name: Install shellcheck
-        run: sudo apt-get install -y shellcheck
-
-      - name: ShellCheck SARIF
-        run: |
-          mkdir -p reports
-          FINDINGS=$(find . -name "*.sh" -not -path "./.git/*" \
-            | xargs shellcheck --format=json 2>/dev/null || true)
-          if [ -z "$FINDINGS" ] || [ "$FINDINGS" = "[]" ]; then
-            echo "[]" | python3 tooling/shellcheck_to_sarif.py > reports/shell-lint.sarif
-          else
-            echo "$FINDINGS" | python3 tooling/shellcheck_to_sarif.py > reports/shell-lint.sarif
-          fi
-          echo "✅ ShellCheck SARIF: reports/shell-lint.sarif"
-
-      - name: Upload ShellCheck SARIF
-        uses: actions/upload-artifact@v4
-        with:
-          name: shell-sarif
-          path: reports/shell-lint.sarif
+      - uses: paulefl/beaglebone-tooling/.github/actions/shellcheck-sarif@v1.1.0
 
   # ── Python Tests (API Mock) ───────────────────
   test-python:
