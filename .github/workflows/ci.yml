@@ -407,6 +407,20 @@ jobs:
           key:          test-trend-${{ github.run_number }}
           restore-keys: test-trend-
 
+      - name: Trend aus reports-Branch laden (Cache-Fallback)
+        run: |
+          mkdir -p reports
+          if [ ! -f reports/test_trend.json ]; then
+            git fetch origin refs/heads/reports 2>/dev/null || true
+            git show origin/reports:test_trend.json > reports/test_trend.json 2>/dev/null \
+              || echo '[]' > reports/test_trend.json
+            ENTRIES=$(python3 -c "import json; print(len(json.load(open('reports/test_trend.json'))))" 2>/dev/null || echo "0")
+            echo "ℹ️  Cache-Miss: ${ENTRIES} Einträge aus reports-Branch geladen"
+          else
+            ENTRIES=$(python3 -c "import json; print(len(json.load(open('reports/test_trend.json'))))" 2>/dev/null || echo "?")
+            echo "✅ ${ENTRIES} Einträge aus Cache geladen"
+          fi
+
       - name: CLI Binary laden
         uses: actions/download-artifact@v8
         with:
@@ -499,6 +513,33 @@ jobs:
         with:
           path: reports/test_trend.json
           key:  test-trend-${{ github.run_number }}
+
+      # ── Trend dauerhaft in reports-Branch persistieren ───────────────────────
+      - name: Trend in reports-Branch persistieren
+        if: always() && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          TMPDIR=$(mktemp -d)
+          if git ls-remote --exit-code origin refs/heads/reports 2>/dev/null; then
+            git worktree add "$TMPDIR" origin/reports
+          else
+            git worktree add --orphan "$TMPDIR" reports
+            git -C "$TMPDIR" commit --allow-empty -m "ci: initialer reports-Branch [skip ci]"
+            git -C "$TMPDIR" push origin HEAD:refs/heads/reports
+          fi
+          cp reports/test_trend.json "$TMPDIR/test_trend.json"
+          git -C "$TMPDIR" add test_trend.json
+          if git -C "$TMPDIR" diff --cached --quiet; then
+            echo "ℹ️  Keine Trend-Änderungen"
+          else
+            git -C "$TMPDIR" commit -m "ci: Trend-Update Build #${{ github.run_number }} [skip ci]"
+            git -C "$TMPDIR" push origin HEAD:refs/heads/reports
+            echo "✅ Trend in reports-Branch gespeichert"
+          fi
+          git worktree remove "$TMPDIR" --force
 
       # ── Dashboard mit Trend-Tab neu generieren ───────────────────────────────
       - name: Dashboard mit Trend generieren
