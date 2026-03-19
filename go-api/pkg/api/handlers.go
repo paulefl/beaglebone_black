@@ -22,7 +22,6 @@ type Server struct {
 
 func cors(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 }
 
 func (s *Server) HealthHandler(w http.ResponseWriter, r *http.Request) {
