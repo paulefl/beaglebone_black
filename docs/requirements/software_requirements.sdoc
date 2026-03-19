@@ -79,6 +79,31 @@ RELATIONS:
   VALUE: go-api/pkg/hal/hal_test.go
 
 [SW_REQUIREMENT]
+UID: SWR-006
+TITLE: HTTP-Server Timeouts
+STATEMENT: Der HTTP-Server muss ReadTimeout, WriteTimeout und IdleTimeout konfigurieren, um auf eingebetteten Systemen Ressourcenerschöpfung durch hängende Verbindungen zu verhindern. ReadTimeout >= 5s, WriteTimeout >= 10s, IdleTimeout >= 30s.
+STATUS: Active
+PRIORITY: High
+RELATIONS:
+- TYPE: Parent
+  VALUE: SYS-004
+- TYPE: File
+  VALUE: go-api/pkg/api/server.go
+- TYPE: File
+  VALUE: go-api/pkg/api/server_test.go
+
+[TEST_CASE]
+UID: TC-006
+TITLE: HTTP-Server hat konfigurierte Timeouts
+STATEMENT: Verifiziert, dass NewHTTPServer einen http.Server mit ReadTimeout, WriteTimeout und IdleTimeout > 0 zurückgibt.
+TEST_TYPE: Unit
+RELATIONS:
+- TYPE: Parent
+  VALUE: SWR-006
+- TYPE: File
+  VALUE: go-api/pkg/api/server_test.go
+
+[SW_REQUIREMENT]
 UID: HW-API-007
 TITLE: POST-Handler JSON-Validierung
 STATEMENT: Alle POST-Handler der REST API müssen den JSON-Request-Body validieren und bei ungültigem JSON oder fehlenden Pflichtfeldern HTTP 400 Bad Request zurückgeben, bevor Hardware-Operationen aufgerufen werden.
