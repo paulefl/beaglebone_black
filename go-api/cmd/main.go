@@ -9,15 +9,20 @@ import (
 	"myproject/pkg/hal/config"
 	"myproject/pkg/hal/loader"
 	"net/http"
+	"sync"
 	"time"
 )
 
-var hw hal.HardwareDriver
+var (
+	hw    hal.HardwareDriver
+	hwMu  sync.Mutex
+	hwCfg *config.Config
+)
 
 func main() {
-	cfg := config.LoadConfig()
+	hwCfg = config.LoadConfig()
 	var err error
-	hw, err = loader.NewDriver(cfg)
+	hw, err = loader.NewDriver(hwCfg)
 	if err != nil {
 		log.Fatalf("HAL init: %v", err)
 	}
@@ -169,6 +174,21 @@ func backendHandler(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Backend string `json:"backend"`
 	}
-	json.NewDecoder(r.Body).Decode(&req)
-	json.NewEncoder(w).Encode(map[string]string{"backend": req.Backend, "status": "ok"})
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid JSON", http.StatusBadRequest)
+		return
+	}
+	cfg := &config.Config{}
+	*cfg = *hwCfg
+	cfg.Backend = req.Backend
+	newHW, err := loader.NewDriver(cfg)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	hwMu.Lock()
+	hw.Close()
+	hw = newHW
+	hwMu.Unlock()
+	json.NewEncoder(w).Encode(map[string]string{"backend": string(newHW.Backend()), "status": "ok"})
 }
