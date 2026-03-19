@@ -79,6 +79,31 @@ RELATIONS:
   VALUE: go-api/pkg/hal/hal_test.go
 
 [SW_REQUIREMENT]
+UID: SWR-007
+TITLE: BME280 Stream Flusher-Prüfung
+STATEMENT: Der BME280StreamHandler muss vor dem Streaming prüfen ob der ResponseWriter das http.Flusher-Interface implementiert. Falls nicht, muss HTTP 500 zurückgegeben werden anstatt einen Panic auszulösen.
+STATUS: Active
+PRIORITY: High
+RELATIONS:
+- TYPE: Parent
+  VALUE: SWR-001
+- TYPE: File
+  VALUE: go-api/pkg/api/handlers.go
+- TYPE: File
+  VALUE: go-api/pkg/api/handlers_test.go
+
+[TEST_CASE]
+UID: TC-007
+TITLE: BME280StreamHandler gibt 500 zurück wenn kein Flusher
+STATEMENT: Verifiziert, dass BME280StreamHandler HTTP 500 zurückgibt wenn der ResponseWriter kein http.Flusher implementiert, anstatt einen Panic zu verursachen.
+TEST_TYPE: Unit
+RELATIONS:
+- TYPE: Parent
+  VALUE: SWR-007
+- TYPE: File
+  VALUE: go-api/pkg/api/handlers_test.go
+
+[SW_REQUIREMENT]
 UID: SWR-006
 TITLE: HTTP-Server Timeouts
 STATEMENT: Der HTTP-Server muss ReadTimeout, WriteTimeout und IdleTimeout konfigurieren, um auf eingebetteten Systemen Ressourcenerschöpfung durch hängende Verbindungen zu verhindern. ReadTimeout >= 5s, WriteTimeout >= 10s, IdleTimeout >= 30s.
