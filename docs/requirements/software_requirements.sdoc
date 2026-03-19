@@ -78,6 +78,31 @@ RELATIONS:
 - TYPE: File
   VALUE: go-api/pkg/hal/hal_test.go
 
+[SW_REQUIREMENT]
+UID: HW-API-007
+TITLE: POST-Handler JSON-Validierung
+STATEMENT: Alle POST-Handler der REST API müssen den JSON-Request-Body validieren und bei ungültigem JSON oder fehlenden Pflichtfeldern HTTP 400 Bad Request zurückgeben, bevor Hardware-Operationen aufgerufen werden.
+STATUS: Active
+PRIORITY: High
+RELATIONS:
+- TYPE: Parent
+  VALUE: SWR-001
+- TYPE: File
+  VALUE: go-api/pkg/api/handlers.go
+- TYPE: File
+  VALUE: go-api/pkg/api/handlers_test.go
+
+[TEST_CASE]
+UID: TC-005
+TITLE: POST-Handler 400 bei ungültigem JSON
+STATEMENT: Verifiziert, dass alle POST-Handler bei ungültigem JSON-Body HTTP 400 zurückgeben und keine Hardware-Operationen mit Null-Werten ausführen.
+TEST_TYPE: Unit
+RELATIONS:
+- TYPE: Parent
+  VALUE: HW-API-007
+- TYPE: File
+  VALUE: go-api/pkg/api/handlers_test.go
+
 [SOURCE_CODE]
 UID: SC-001
 TITLE: HAL Interface
