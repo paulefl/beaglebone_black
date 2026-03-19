@@ -268,7 +268,6 @@ steps:
     image: bash:5
     commands:
       - bash -n scripts/install.sh && echo "✅ install.sh Syntax OK"
-      - bash -n tooling/build_adoc.sh && echo "✅ build_adoc.sh Syntax OK"
 
   - name: build-cli-linux-amd64
     image: golang:1.22-alpine
@@ -559,9 +558,26 @@ steps:
       branch: [main]
       event:  [push]
 
-  - name: collect-results
+  - name: download-tooling
     image: python:3.12-alpine
     depends_on: [run-hardware-tests]
+    commands:
+      - apk add --no-cache curl
+      - mkdir -p tooling
+      - |
+        TOOLING_URL=$(python3 -c "
+        import urllib.request, json
+        with urllib.request.urlopen('https://api.github.com/repos/paulefl/beaglebone-tooling/releases/latest') as r:
+            data = json.load(r)
+        asset = next(a for a in data['assets'] if 'tooling-' in a['name'])
+        print(asset['browser_download_url'])
+        ")
+        curl -sL "$TOOLING_URL" | tar xz -C tooling
+      - chmod +x tooling/*.sh tooling/bausteinsicht
+
+  - name: collect-results
+    image: python:3.12-alpine
+    depends_on: [download-tooling]
     volumes:
       - name: report-workspace
         path: /workspace
