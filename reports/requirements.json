@@ -216,9 +216,9 @@
           "titel": "CORS Support",
           "beschreibung": "Die API muss CORS Headers setzen für Zugriff aus dem Browser.",
           "prioritaet": "MITTEL",
-          "status": "IMPLEMENTIERT",
-          "tests": ["test_cors_options_preflight", "test_cors_headers"],
-          "abdeckung": 100
+          "status": "OFFEN",
+          "tests": [],
+          "abdeckung": 0
         }
       ]
     },
@@ -442,36 +442,7 @@
     {"name": "test_gui_refresh",           "status": "BESTANDEN", "dauer_ms": 2200,"komponente": "GUI"},
     {"name": "test_gui_backend_wechsel",   "status": "BESTANDEN", "dauer_ms": 75,  "komponente": "GUI"},
     {"name": "test_gui_dark_theme",        "status": "ÜBERSPRUNGEN","dauer_ms": 0, "komponente": "GUI"},
-    {"name": "test_concurrent_gpio",           "status": "BESTANDEN", "dauer_ms": 320, "komponente": "HAL"},
-    {"name": "test_concurrent_bme280",         "status": "BESTANDEN", "dauer_ms": 285, "komponente": "HAL"},
-    {"name": "test_spi_open",                  "status": "BESTANDEN", "dauer_ms": 14,  "komponente": "EMB"},
-    {"name": "test_bme280_backend_angabe",     "status": "BESTANDEN", "dauer_ms": 32,  "komponente": "API"},
-    {"name": "test_uart_config",               "status": "BESTANDEN", "dauer_ms": 28,  "komponente": "API"},
-    {"name": "test_spi_response_format",       "status": "BESTANDEN", "dauer_ms": 35,  "komponente": "API"},
-    {"name": "test_backend_wechsel_api",       "status": "BESTANDEN", "dauer_ms": 45,  "komponente": "API"},
-    {"name": "test_backend_invalid",           "status": "BESTANDEN", "dauer_ms": 22,  "komponente": "API"},
-    {"name": "test_health_felder",             "status": "BESTANDEN", "dauer_ms": 15,  "komponente": "API"},
-    {"name": "test_sse_verbindung",            "status": "BESTANDEN", "dauer_ms": 180, "komponente": "API"},
-    {"name": "test_sse_format",                "status": "BESTANDEN", "dauer_ms": 95,  "komponente": "API"},
-    {"name": "test_cors_options_preflight",    "status": "BESTANDEN", "dauer_ms": 8,   "komponente": "API"},
-    {"name": "test_cors_headers",              "status": "BESTANDEN", "dauer_ms": 6,   "komponente": "API"},
-    {"name": "test_cli_befehle",               "status": "BESTANDEN", "dauer_ms": 72,  "komponente": "CLI"},
-    {"name": "test_bme280_read_cmd",           "status": "BESTANDEN", "dauer_ms": 65,  "komponente": "CLI"},
-    {"name": "test_bme280_config_cmd",         "status": "BESTANDEN", "dauer_ms": 58,  "komponente": "CLI"},
-    {"name": "test_gpio_read_cmd",             "status": "BESTANDEN", "dauer_ms": 52,  "komponente": "CLI"},
-    {"name": "test_gpio_write_cmd",            "status": "BESTANDEN", "dauer_ms": 55,  "komponente": "CLI"},
-    {"name": "test_gpio_config_cmd",           "status": "BESTANDEN", "dauer_ms": 60,  "komponente": "CLI"},
-    {"name": "test_uart_send_cmd",             "status": "BESTANDEN", "dauer_ms": 68,  "komponente": "CLI"},
-    {"name": "test_uart_receive_cmd",          "status": "BESTANDEN", "dauer_ms": 75,  "komponente": "CLI"},
-    {"name": "test_completion_fish",           "status": "BESTANDEN", "dauer_ms": 82,  "komponente": "CLI"},
-    {"name": "test_build_linux_amd64",         "status": "BESTANDEN", "dauer_ms": 4200,"komponente": "CLI"},
-    {"name": "test_build_armv7",               "status": "BESTANDEN", "dauer_ms": 5800,"komponente": "CLI"},
-    {"name": "test_build_darwin",              "status": "BESTANDEN", "dauer_ms": 4600,"komponente": "CLI"},
-    {"name": "test_build_windows",             "status": "BESTANDEN", "dauer_ms": 4400,"komponente": "CLI"},
-    {"name": "test_installer_completion",      "status": "BESTANDEN", "dauer_ms": 38,  "komponente": "CLI"},
-    {"name": "test_desktop_tabs",              "status": "BESTANDEN", "dauer_ms": 145, "komponente": "GUI"},
-    {"name": "test_tui_navigation",            "status": "BESTANDEN", "dauer_ms": 112, "komponente": "GUI"},
-    {"name": "test_sse_stream_gui",            "status": "BESTANDEN", "dauer_ms": 2350,"komponente": "GUI"},
-    {"name": "test_gui_backend_anzeige",       "status": "BESTANDEN", "dauer_ms": 88,  "komponente": "GUI"}
+    {"name": "test_concurrent_gpio",       "status": "BESTANDEN", "dauer_ms": 320, "komponente": "HAL"},
+    {"name": "test_concurrent_bme280",     "status": "BESTANDEN", "dauer_ms": 285, "komponente": "HAL"}
   ]
 }
