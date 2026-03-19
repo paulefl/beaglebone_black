@@ -97,6 +97,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ShellCheck SARIF Report für SonarCloud (#55) (#68) (#68)
 - Deaktiviere C/C++ SonarCloud-Analyse + verbessertes Error Reporting (#70) (#70)
 - fix(api): POST /api/v1/backend wechselt jetzt tatsächlich den HAL-Backend (#72)
+- fix(ci): Trend-Cache Git-Fallback via reports-Branch (#74)
 
 
 # Changelog
