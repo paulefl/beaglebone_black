@@ -77,10 +77,10 @@ def calc_stats():
     fehlgeschlagen = sum(1 for t in TESTS if t["status"] == "FEHLGESCHLAGEN")
     uebersprungen  = sum(1 for t in TESTS if t["status"] == "ÜBERSPRUNGEN")
 
-    avg_coverage = sum(
+    avg_coverage = (sum(
         r["abdeckung"]
         for k in KATEGORIEN for r in k["requirements"]
-    ) / total_reqs
+    ) / total_reqs) if total_reqs else 0.0
 
     total_dauer = sum(t["dauer_ms"] for t in TESTS)
 
@@ -88,13 +88,13 @@ def calc_stats():
         "total_reqs":      total_reqs,
         "impl_reqs":       impl_reqs,
         "offen_reqs":      offen_reqs,
-        "req_coverage":    round(impl_reqs / total_reqs * 100, 1),
+        "req_coverage":    round(impl_reqs / total_reqs * 100, 1) if total_reqs else 0.0,
         "total_tests":     total_tests,
         "bestanden":       bestanden,
         "fehlgeschlagen":  fehlgeschlagen,
         "uebersprungen":   uebersprungen,
-        "test_rate":       round(bestanden / total_tests * 100, 1),
-        "avg_coverage":    round(avg_coverage, 1),
+        "test_rate":       round(bestanden / total_tests * 100, 1) if total_tests else 0.0,
+        "avg_coverage":    round(avg_coverage, 1) if total_reqs else 0.0,
         "total_dauer_ms":  total_dauer,
         "total_dauer_s":   round(total_dauer / 1000, 2),
     }
