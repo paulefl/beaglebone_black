@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Infrastruktur & Tooling
 
+- refactor(tooling): Phase 3 — tooling/ aus Repo entfernt, beaglebone-tooling Release-Download in CI (Issue #85) (#87)
+- refactor(tooling): Phase 2 — eigenes Repo paulefl/beaglebone-tooling mit Requirements, Tests und Release v1.0.0 (Issue #85)
 - refactor(tooling): Phase 1 — Tooling in tooling/ Ordner gruppieren, Code/Tooling-Trennung vorbereitet (Issue #85) (#86)
 - fix(reports): Dashboard zeigt ❓ für 27 Tests — collect_results.py implementiert, static/dynamic JSON getrennt (Issue #15) (#84)
 - Use container script instead of inline podman commands 
