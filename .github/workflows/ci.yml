@@ -347,12 +347,32 @@ jobs:
         continue-on-error: true
 
       - name: SonarCloud Scan
+        id: sonar
         uses: SonarSource/sonarqube-scan-action@v6
-        continue-on-error: true  # kein Blocker solange SONAR_TOKEN nicht gesetzt
+        continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN:  ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
+
+      - name: SonarCloud Ergebnis prüfen
+        if: always()
+        run: |
+          if [ "${{ steps.sonar.outcome }}" = "failure" ]; then
+            if [ -z "${{ secrets.SONAR_TOKEN }}" ]; then
+              echo "⚠️  SonarCloud übersprungen: SONAR_TOKEN nicht gesetzt"
+            else
+              echo "❌ SonarCloud Scan fehlgeschlagen (exit code: ${{ steps.sonar.conclusion }})"
+              echo "   Mögliche Ursachen:"
+              echo "   - Compilation Database fehlt für C/C++ (sonar.cfamily.compile-commands)"
+              echo "   - Ungültiger SONAR_TOKEN"
+              echo "   - Falsches sonar.projectKey / sonar.organization"
+              echo "   → Logs: gh run view ${{ github.run_id }} --log --job ${{ github.job }}"
+              exit 1
+            fi
+          else
+            echo "✅ SonarCloud Scan erfolgreich"
+          fi
 
   # ── Test Report + Trend ───────────────────────
   report:
