@@ -48,10 +48,10 @@ test-python:
 	pytest tests/api/ -v --timeout=10
 
 test-report:
-	./scripts/report.sh
+	./tooling/report.sh
 
 test-report-open:
-	./scripts/report.sh --open
+	./tooling/report.sh --open
 
 deploy:
 	scp bin/embedded go-api/libs/libhardware.so go-api/libs/libhardware_rs.so \
