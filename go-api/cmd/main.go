@@ -44,7 +44,8 @@ func main() {
 	r.HandleFunc("/api/v1/backend", backendHandler(srv)).Methods("POST")
 
 	log.Printf("API läuft auf :5000")
-	log.Fatal(http.ListenAndServe(":5000", r))
+	httpSrv := api.NewHTTPServer(":5000", r)
+	log.Fatal(httpSrv.ListenAndServe())
 }
 
 // backendHandler bleibt in main, da er hw und hwCfg tauscht.
