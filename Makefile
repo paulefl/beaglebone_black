@@ -48,10 +48,10 @@ test-python:
 	pytest tests/api/ -v --timeout=10
 
 test-report:
-	./scripts/report.sh
+	./tooling/report.sh
 
 test-report-open:
-	./scripts/report.sh --open
+	./tooling/report.sh --open
 
 deploy:
 	scp bin/embedded go-api/libs/libhardware.so go-api/libs/libhardware_rs.so \
@@ -63,7 +63,7 @@ req-tracing:
 	strictdoc --debug export . --formats html2pdf --output-dir output/strictdoc
 	strictdoc --debug export . --formats excel    --output-dir output/strictdoc
 	strictdoc --debug export . --formats reqif-sdoc --output-dir output/strictdoc
-	python3 scripts/req_tracing_summary.py
+	python3 tooling/req_tracing_summary.py
 
 clean:
 	$(MAKE) -C c-lib clean

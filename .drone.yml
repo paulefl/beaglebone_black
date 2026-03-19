@@ -268,7 +268,7 @@ steps:
     image: bash:5
     commands:
       - bash -n scripts/install.sh && echo "✅ install.sh Syntax OK"
-      - bash -n scripts/build_adoc.sh && echo "✅ build_adoc.sh Syntax OK"
+      - bash -n tooling/build_adoc.sh && echo "✅ build_adoc.sh Syntax OK"
 
   - name: build-cli-linux-amd64
     image: golang:1.22-alpine
@@ -566,7 +566,7 @@ steps:
       - name: report-workspace
         path: /workspace
     commands:
-      - python3 scripts/collect_results.py
+      - python3 tooling/collect_results.py
           --workspace /workspace
           --requirements requirements.json
           --output /workspace/test_results.json
@@ -583,7 +583,7 @@ steps:
     commands:
       - pip install reportlab jinja2 --break-system-packages -q
       - 
-      - python3 scripts/generate_reports.py --output /workspace/reports --results /workspace/test_results.json --trend /trend/test_trend.json
+      - python3 tooling/generate_reports.py --output /workspace/reports --results /workspace/test_results.json --trend /trend/test_trend.json
       - ls -lh /workspace/reports/
 
   - name: generate-architecture
@@ -594,7 +594,7 @@ steps:
         path: /workspace
     commands:
       - pip install reportlab --break-system-packages -q
-      - python3 arch/generate_arch.py --output /workspace/arch
+      - python3 tooling/generate_arch.py --output /workspace/arch
       - ls -lh /workspace/arch/
 
   - name: build-docs
@@ -607,8 +607,8 @@ steps:
       OUTPUT_DIR: /workspace/docs
     commands:
       - gem install asciidoctor-pdf rouge --quiet
-      - chmod +x scripts/build_adoc.sh
-      - ROOT_DIR=. OUTPUT_DIR=/workspace/docs bash scripts/build_adoc.sh
+      - chmod +x tooling/build_adoc.sh
+      - ROOT_DIR=. OUTPUT_DIR=/workspace/docs bash tooling/build_adoc.sh
       - find /workspace/docs -name "*.html" -o -name "*.pdf" | sort
 
   - name: check-quality-gates

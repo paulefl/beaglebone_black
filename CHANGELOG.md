@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Infrastruktur & Tooling
 
+- refactor(tooling): Phase 1 — Tooling in tooling/ Ordner gruppieren, Code/Tooling-Trennung vorbereitet (Issue #85) (#86)
 - fix(reports): Dashboard zeigt ❓ für 27 Tests — collect_results.py implementiert, static/dynamic JSON getrennt (Issue #15) (#84)
 - Use container script instead of inline podman commands 
 - Separate build step from run commands 
