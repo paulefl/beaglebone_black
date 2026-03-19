@@ -359,7 +359,7 @@ run_html_validation
 
 # ── Test-Ergebnisse in requirements.json aktualisieren ───────────────────────
 section_header "7. Requirements Tracing aktualisieren"
-if python3 "$REPO_ROOT/reports/collect_results.py" \
+if python3 "$REPO_ROOT/scripts/collect_results.py" \
     --workspace "$REPORT_DIR" \
     --requirements "$REPO_ROOT/reports/requirements.json" \
     --output "$REPO_ROOT/reports/requirements.json"; then

@@ -3,13 +3,13 @@
 in requirements.json.
 
 Aufruf (Drone CI):
-    python3 reports/collect_results.py \\
+    python3 scripts/collect_results.py \\
         --workspace /workspace \\
         --requirements requirements.json \\
         --output /workspace/merged_requirements.json
 
 Aufruf (lokal via report.sh):
-    python3 reports/collect_results.py \\
+    python3 scripts/collect_results.py \\
         --workspace reports/ \\
         --requirements reports/requirements.json \\
         --output reports/requirements.json

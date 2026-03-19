@@ -566,7 +566,7 @@ steps:
       - name: report-workspace
         path: /workspace
     commands:
-      - python3 reports/collect_results.py
+      - python3 scripts/collect_results.py
           --workspace /workspace
           --requirements requirements.json
           --output /workspace/merged_requirements.json
@@ -583,7 +583,7 @@ steps:
     commands:
       - pip install reportlab jinja2 --break-system-packages -q
       - cp /workspace/merged_requirements.json requirements.json
-      - python3 reports/generate_reports.py --output /workspace/reports --trend /trend/test_trend.json
+      - python3 scripts/generate_reports.py --output /workspace/reports --trend /trend/test_trend.json
       - ls -lh /workspace/reports/
 
   - name: generate-architecture
