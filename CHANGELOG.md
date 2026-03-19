@@ -111,6 +111,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - POST /api/v1/backend wechselt jetzt tatsächlich den HAL-Backend (#72) (#72)
 - Trend-Cache Git-Fallback via reports-Branch (#74) (#74)
 - POST-Handler geben 400 bei ungültigem JSON zurück (#75) (#75)
+- HTTP-Server mit ReadTimeout/WriteTimeout/IdleTimeout gegen Ressourcenerschöpfung (#77) (#77)
 
 
 # Changelog
