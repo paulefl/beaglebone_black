@@ -32,6 +32,34 @@ func routerFor(s *api.Server) *mux.Router {
 	return r
 }
 
+// nonFlushingWriter ist ein ResponseWriter ohne http.Flusher — für Issue #27.
+// Implementiert nur http.ResponseWriter, NICHT http.Flusher.
+type nonFlushingWriter struct {
+	header http.Header
+	code   int
+	body   strings.Builder
+}
+
+func newNonFlushingWriter() *nonFlushingWriter {
+	return &nonFlushingWriter{header: make(http.Header)}
+}
+func (w *nonFlushingWriter) Header() http.Header         { return w.header }
+func (w *nonFlushingWriter) Write(b []byte) (int, error) { return w.body.Write(b) }
+func (w *nonFlushingWriter) WriteHeader(code int)        { w.code = code }
+
+// ── Regression Tests: Issue #27 ─────────────────────────────────────────────
+// BME280StreamHandler muss 500 zurückgeben wenn ResponseWriter kein Flusher ist.
+
+func TestBME280Stream_NoFlusher_Returns500(t *testing.T) {
+	s := newTestServer(t)
+	req := httptest.NewRequest("GET", "/api/v1/bme280/stream", nil)
+	w := newNonFlushingWriter()
+	s.BME280StreamHandler(w, req)
+	if w.code != http.StatusInternalServerError {
+		t.Errorf("BME280StreamHandler no flusher: got %d, want 500", w.code)
+	}
+}
+
 // ── Regression Tests: Issue #31 ─────────────────────────────────────────────
 // HW-API-007: POST-Handler müssen bei ungültigem JSON 400 zurückgeben.
 
