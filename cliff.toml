@@ -32,18 +32,21 @@ conventional_commits = true
 filter_unconventional = false
 split_commits = false
 commit_parsers = [
-  { message = "^feat", group = "Added" },
-  { message = "^add", group = "Added" },
-  { message = "^fix", group = "Fixed" },
-  { message = "^bug", group = "Fixed" },
-  { message = "^refactor", group = "Changed" },
-  { message = "^perf", group = "Changed" },
-  { message = "^docs", group = "Documentation" },
-  { message = "^ci", group = "CI" },
-  { message = "^test", group = "Testing" },
-  { message = "^chore", group = "Chore" },
-  { message = "^security", group = "Security" },
-  # Skip dependabot and merge commits
+  # Software-Änderungen: beeinflussen Binary / API / Verhalten
+  { message = "^feat", group = "Software-Änderungen" },
+  { message = "^add", group = "Software-Änderungen" },
+  { message = "^fix", group = "Software-Änderungen" },
+  { message = "^bug", group = "Software-Änderungen" },
+  { message = "^perf", group = "Software-Änderungen" },
+  { message = "^refactor", group = "Software-Änderungen" },
+  { message = "^security", group = "Software-Änderungen" },
+  # Infrastruktur & Tooling: CI, Docs, Tests, Build, Tools
+  { message = "^ci", group = "Infrastruktur & Tooling" },
+  { message = "^docs", group = "Infrastruktur & Tooling" },
+  { message = "^test", group = "Infrastruktur & Tooling" },
+  { message = "^build", group = "Infrastruktur & Tooling" },
+  { message = "^chore", group = "Infrastruktur & Tooling" },
+  # Skip merge commits, dependabot, version bumps
   { message = "^Merge", skip = true },
   { message = "dependabot", skip = true },
   { message = "^bump", skip = true },
