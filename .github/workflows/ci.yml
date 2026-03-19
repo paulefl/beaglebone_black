@@ -50,6 +50,12 @@ jobs:
           cp go-api/coverage.out reports/go-coverage.out
           cd go-api && gocover-cobertura < coverage.out > ../reports/go-coverage.xml
 
+      - name: Convert JUnit XML to SonarQube Generic Test Execution format
+        run: |
+          python3 scripts/junit_to_sonar_generic.py \
+            reports/go-tests-junit.xml \
+            reports/go-tests-sonar.xml
+
       - name: Upload Coverage (Codecov)
         uses: codecov/codecov-action@v5
         with:
@@ -62,6 +68,7 @@ jobs:
           name: go-reports
           path: |
             reports/go-tests-junit.xml
+            reports/go-tests-sonar.xml
             reports/go-tests.json
             reports/go-coverage.xml
             reports/go-coverage.out
