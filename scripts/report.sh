@@ -362,7 +362,7 @@ section_header "7. Requirements Tracing aktualisieren"
 if python3 "$REPO_ROOT/scripts/collect_results.py" \
     --workspace "$REPORT_DIR" \
     --requirements "$REPO_ROOT/reports/requirements.json" \
-    --output "$REPO_ROOT/reports/requirements.json"; then
+    --output "$REPORT_DIR/test_results.json"; then
     echo -e "  ${GREEN}✅${NC} requirements.json aktualisiert"
 else
     echo -e "  ${YELLOW}⚠${NC}  collect_results.py fehlgeschlagen — requirements.json unverändert"

@@ -33,6 +33,7 @@ reports/*.html
 reports/*.pdf
 reports/*.md
 reports/shell-syntax.txt
+reports/test_results.json
 reports/output/
 arch/.cache/
 docs/output/

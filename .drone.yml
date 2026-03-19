@@ -569,7 +569,7 @@ steps:
       - python3 scripts/collect_results.py
           --workspace /workspace
           --requirements requirements.json
-          --output /workspace/merged_requirements.json
+          --output /workspace/test_results.json
           --meta /workspace/build_meta.json
 
   - name: generate-reports
@@ -582,8 +582,8 @@ steps:
         path: /trend
     commands:
       - pip install reportlab jinja2 --break-system-packages -q
-      - cp /workspace/merged_requirements.json requirements.json
-      - python3 scripts/generate_reports.py --output /workspace/reports --trend /trend/test_trend.json
+      - 
+      - python3 scripts/generate_reports.py --output /workspace/reports --results /workspace/test_results.json --trend /trend/test_trend.json
       - ls -lh /workspace/reports/
 
   - name: generate-architecture
@@ -620,7 +620,7 @@ steps:
     commands:
       - python3 << 'PYEOF'
 import json, sys
-with open("/workspace/merged_requirements.json") as f:
+with open("reports/requirements.json") as f:
     data = json.load(f)
 tests    = data["test_ergebnisse"]
 all_reqs = [r for k in data["kategorien"] for r in k["requirements"]]
@@ -656,7 +656,7 @@ PYEOF
       - python3 << 'PYEOF'
 import json, os
 from datetime import datetime
-with open("/workspace/merged_requirements.json") as f: data = json.load(f)
+with open("reports/requirements.json") as f: data = json.load(f)
 tests    = data["test_ergebnisse"]
 all_reqs = [r for k in data["kategorien"] for r in k["requirements"]]
 total    = len(tests); best = sum(1 for t in tests if t["status"] == "BESTANDEN")

@@ -111,7 +111,7 @@ steps:
       - python3 scripts/collect_results.py
           --workspace /workspace
           --requirements requirements.json
-          --output /workspace/merged_requirements.json
+          --output /workspace/test_results.json
           --meta /workspace/build_meta.json
 
   # ════════════════════════════════════════

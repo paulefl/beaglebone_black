@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
-"""collect_results.py — Liest echte Testergebnisse und aktualisiert test_ergebnisse
-in requirements.json.
+"""collect_results.py — Liest echte Testergebnisse und schreibt test_results.json.
 
 Aufruf (Drone CI):
     python3 scripts/collect_results.py \\
         --workspace /workspace \\
-        --requirements requirements.json \\
-        --output /workspace/merged_requirements.json
+        --requirements reports/requirements.json \\
+        --output /workspace/test_results.json
 
 Aufruf (lokal via report.sh):
     python3 scripts/collect_results.py \\
         --workspace reports/ \\
         --requirements reports/requirements.json \\
-        --output reports/requirements.json
+        --output reports/test_results.json
+
+Ausgabe: test_results.json mit nur {"test_ergebnisse": [...]}
+generate_reports.py liest requirements.json + test_results.json getrennt.
 
 Eingabe-Dateien im workspace:
     go-tests.json       go test -json (newline-delimited JSON)
@@ -296,12 +298,10 @@ def collect(workspace: str, requirements_path: str, output_path: str) -> None:
         kat_order.get(t["komponente"], 99), t["name"]
     ))
 
-    data["test_ergebnisse"] = new_ergebnisse
-
-    # Output schreiben
+    # Nur test_results.json schreiben (dynamischer Teil)
     os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+        json.dump({"test_ergebnisse": new_ergebnisse}, f, ensure_ascii=False, indent=2)
     print(f"✅ Output: {output_path}")
 
 
@@ -313,7 +313,7 @@ def main() -> None:
     parser.add_argument("--requirements", required=True,
                         help="Pfad zur requirements.json (Input)")
     parser.add_argument("--output",       required=True,
-                        help="Pfad zur merged requirements.json (Output)")
+                        help="Pfad zur test_results.json (Output, nur test_ergebnisse)")
     parser.add_argument("--meta",         default=None,
                         help="Pfad zur build_meta.json (optional, wird ignoriert)")
     args = parser.parse_args()

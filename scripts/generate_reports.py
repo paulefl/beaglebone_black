@@ -16,13 +16,17 @@ _parser.add_argument("--output", default=os.path.dirname(__file__) or ".",
 _parser.add_argument("--trend", default=None,
                      help="Pfad zur test_trend.json Datei (optional)")
 _parser.add_argument("--requirements", default=None,
-                     help="Pfad zur requirements.json (default: neben diesem Script)")
+                     help="Pfad zur requirements.json (default: reports/requirements.json)")
+_parser.add_argument("--results", default=None,
+                     help="Pfad zur test_results.json (default: reports/test_results.json)")
 _args, _unknown = _parser.parse_known_args()
 
 OUTPUT_DIR   = _args.output
 TREND_FILE   = _args.trend
-REQUIREMENTS = _args.requirements or os.path.join(
-    os.path.dirname(__file__) or ".", "requirements.json")
+
+_repo_root   = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+REQUIREMENTS = _args.requirements or os.path.join(_repo_root, "reports", "requirements.json")
+RESULTS_FILE = _args.results      or os.path.join(_repo_root, "reports", "test_results.json")
 
 # ── Daten laden ──────────────────────────
 if not os.path.exists(REQUIREMENTS):
@@ -30,6 +34,15 @@ if not os.path.exists(REQUIREMENTS):
     sys.exit(1)
 with open(REQUIREMENTS) as f:
     data = json.load(f)
+
+# test_results.json laden (dynamischer Teil, optional)
+if os.path.exists(RESULTS_FILE):
+    with open(RESULTS_FILE) as f:
+        data["test_ergebnisse"] = json.load(f).get("test_ergebnisse", [])
+    print(f"📥 Test-Ergebnisse geladen: {RESULTS_FILE} ({len(data['test_ergebnisse'])} Einträge)")
+else:
+    data.setdefault("test_ergebnisse", [])
+    print(f"⚠️  test_results.json nicht gefunden — Dashboard zeigt ❓ für alle Tests")
 
 # ── Trend-Daten laden (optional) ──────────
 TREND_DATA = []
