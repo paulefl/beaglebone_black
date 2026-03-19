@@ -126,9 +126,8 @@ steps:
     commands:
       - pip install reportlab jinja2
           --break-system-packages -q
-      - cp /workspace/merged_requirements.json
-          requirements.json
       - python3 scripts/generate_reports.py
+          --results /workspace/test_results.json
           --output /workspace/reports
       - |
         for f in bb_dashboard.html bb_report.pdf \
@@ -330,8 +329,10 @@ latest/download/plantuml.jar
       - python3 << 'PYEOF'
 import json, sys
 
-with open("/workspace/merged_requirements.json") as f:
+with open("reports/requirements.json") as f:
     data = json.load(f)
+with open("/workspace/test_results.json") as f:
+    data["test_ergebnisse"] = json.load(f).get("test_ergebnisse", [])
 
 tests    = data["test_ergebnisse"]
 all_reqs = [r for k in data["kategorien"]
@@ -393,8 +394,10 @@ PYEOF
 import json, os
 from datetime import datetime
 
-with open("/workspace/merged_requirements.json") as f:
+with open("reports/requirements.json") as f:
     data = json.load(f)
+with open("/workspace/test_results.json") as f:
+    data["test_ergebnisse"] = json.load(f).get("test_ergebnisse", [])
 with open("/workspace/build_meta.json") as f:
     meta = json.load(f)
 

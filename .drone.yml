@@ -622,6 +622,8 @@ steps:
 import json, sys
 with open("reports/requirements.json") as f:
     data = json.load(f)
+with open("/workspace/test_results.json") as f:
+    data["test_ergebnisse"] = json.load(f).get("test_ergebnisse", [])
 tests    = data["test_ergebnisse"]
 all_reqs = [r for k in data["kategorien"] for r in k["requirements"]]
 total    = len(tests)
@@ -657,6 +659,7 @@ PYEOF
 import json, os
 from datetime import datetime
 with open("reports/requirements.json") as f: data = json.load(f)
+with open("/workspace/test_results.json") as f: data["test_ergebnisse"] = json.load(f).get("test_ergebnisse", [])
 tests    = data["test_ergebnisse"]
 all_reqs = [r for k in data["kategorien"] for r in k["requirements"]]
 total    = len(tests); best = sum(1 for t in tests if t["status"] == "BESTANDEN")
