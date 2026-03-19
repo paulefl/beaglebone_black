@@ -117,6 +117,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Trend-Cache Git-Fallback via reports-Branch (#74) (#74)
 - POST-Handler geben 400 bei ungültigem JSON zurück (#75) (#75)
 - HTTP-Server mit ReadTimeout/WriteTimeout/IdleTimeout (Issue #21) (#77) (#77)
+- BME280StreamHandler Flusher nil-Check Regression Test + REQ SWR-007 (#79) (#79)
 
 
 # Changelog
