@@ -1185,9 +1185,9 @@ EOF
       - pip install reportlab jinja2
           --break-system-packages -q
       # Report Generator ausführen
-      - python3 scripts/generate_reports.py
+      - python3 tooling/generate_reports.py
       # Architektur generieren
-      - python3 arch/generate_arch.py
+      - python3 tooling/generate_arch.py
       # Alle Reports auflisten
       - echo "=== Generierte Reports ==="
       - ls -lh reports/output/
