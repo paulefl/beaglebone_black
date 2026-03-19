@@ -15,67 +15,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-go@v6
-        with:
-          go-version: '1.23'
-          cache: true
-
-      - uses: paulefl/beaglebone-tooling/.github/actions/download-tooling@v1.1.0
+      - uses: paulefl/beaglebone-tooling/.github/actions/go-test@v1.1.0
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Install report tools
-        run: |
-          go install gotest.tools/gotestsum@v1.12.0
-          go install github.com/boumenot/gocover-cobertura@latest
-
-      - name: Go Unit Tests
-        run: |
-          mkdir -p reports
-          cd go-api && gotestsum \
-            --junitfile ../reports/go-tests-junit.xml \
-            --jsonfile  ../reports/go-tests.json \
-            -- \
-            -race -count=3 \
-            -coverprofile=coverage.out \
-            -covermode=atomic \
-            -coverpkg=./pkg/hal/,./pkg/hal/mock/,./pkg/hal/config/ \
-            ./pkg/hal/ ./pkg/hal/mock/ ./pkg/hal/config/
-
-      - name: Coverage Quality Gate
-        run: |
-          total=$(cd go-api && go tool cover -func=coverage.out | grep "^total:" | awk '{print $3}' | tr -d '%')
-          echo "Coverage: ${total}%"
-          awk "BEGIN{exit !($total >= 75)}" || (echo "❌ Coverage gate: ${total}% < 75%"; exit 1)
-          echo "✅ Coverage gate: ${total}% >= 75%"
-
-      - name: Convert coverage to Cobertura XML
-        run: |
-          cp go-api/coverage.out reports/go-coverage.out
-          cd go-api && gocover-cobertura < coverage.out > ../reports/go-coverage.xml
-
-      - name: Convert JUnit XML to SonarQube Generic Test Execution format
-        run: |
-          python3 tooling/junit_to_sonar_generic.py \
-            reports/go-tests-junit.xml \
-            reports/go-tests-sonar.xml
-
-      - name: Upload Coverage (Codecov)
-        uses: codecov/codecov-action@v5
         with:
-          file: go-api/coverage.out
-          flags: hal-unit-tests
-
-      - name: Upload Go reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: go-reports
-          path: |
-            reports/go-tests-junit.xml
-            reports/go-tests-sonar.xml
-            reports/go-tests.json
-            reports/go-coverage.xml
-            reports/go-coverage.out
+          coverpkg: './pkg/hal/,./pkg/hal/mock/,./pkg/hal/config/'
+          test-packages: './pkg/hal/ ./pkg/hal/mock/ ./pkg/hal/config/'
+          codecov-flags: hal-unit-tests
 
   # ── C Coverage ───────────────────────────────
   test-c:
