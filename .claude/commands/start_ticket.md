@@ -7,8 +7,27 @@ The user's request: $ARGUMENTS
 Führe folgende Schritte aus:
 
 ### 1. Kontext verstehen
-Falls $ARGUMENTS leer ist, frage den User was für ticket er startet möchte,
-wenn möglich über eine list durch auslesen der open issues ("ToDo") im ticket und durch interaktives asuwählen
+Falls $ARGUMENTS leer ist, lese alle offenen Issues mit:
+```bash
+gh issue list --state open --limit 50 --json number,title,labels,assignees
+```
+Zeige dann eine nummerierte, strukturierte Liste im folgenden Format und frage den User welches Issue er starten möchte (Nummer eingeben):
+
+```
+Offene Issues:
+──────────────────────────────────────────────────
+ #  Nr   Titel                              Labels
+──────────────────────────────────────────────────
+ 1  #21  <titel>                            bug
+ 2  #22  <titel>                            enhancement
+...
+──────────────────────────────────────────────────
+Welches Issue möchtest du starten? (Nummer eingeben):
+```
+
+Warte auf die Eingabe des Users und verwende das ausgewählte Issue weiter.
+
+Falls $ARGUMENTS nicht leer ist, verwende die angegebene Issue-Nummer direkt.
 
 Setze das ausgewählte issue in state "In Progress" und erstelle und verlinke einen branch mit dem folgendem schema:
 <issueNummer>-<titel des issues>
