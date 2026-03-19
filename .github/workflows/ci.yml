@@ -20,6 +20,15 @@ jobs:
           go-version: '1.23'
           cache: true
 
+      - name: Download tooling
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p tooling
+          gh release download --repo paulefl/beaglebone-tooling --pattern "tooling-*.tar.gz" --dir /tmp/tooling-dl
+          tar xf /tmp/tooling-dl/tooling-*.tar.gz -C tooling
+          chmod +x tooling/*.sh tooling/bausteinsicht
+
       - name: Install report tools
         run: |
           go install gotest.tools/gotestsum@v1.12.0
@@ -105,6 +114,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Download tooling
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p tooling
+          gh release download --repo paulefl/beaglebone-tooling --pattern "tooling-*.tar.gz" --dir /tmp/tooling-dl
+          tar xf /tmp/tooling-dl/tooling-*.tar.gz -C tooling
+          chmod +x tooling/*.sh tooling/bausteinsicht
 
       - name: Bash Syntax
         run: |
@@ -253,6 +271,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Download tooling
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p tooling
+          gh release download --repo paulefl/beaglebone-tooling --pattern "tooling-*.tar.gz" --dir /tmp/tooling-dl
+          tar xf /tmp/tooling-dl/tooling-*.tar.gz -C tooling
+          chmod +x tooling/*.sh tooling/bausteinsicht
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -386,6 +413,15 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4
+
+      - name: Download tooling
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p tooling
+          gh release download --repo paulefl/beaglebone-tooling --pattern "tooling-*.tar.gz" --dir /tmp/tooling-dl
+          tar xf /tmp/tooling-dl/tooling-*.tar.gz -C tooling
+          chmod +x tooling/*.sh tooling/bausteinsicht
 
       - uses: actions/setup-go@v6
         with:

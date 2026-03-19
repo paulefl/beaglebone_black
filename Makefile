@@ -47,10 +47,21 @@ lint:
 test-python:
 	pytest tests/api/ -v --timeout=10
 
-test-report:
+tooling-download:
+	@echo "⬇️  Tooling herunterladen von beaglebone-tooling (latest release)..."
+	mkdir -p tooling
+	@curl -sL "https://api.github.com/repos/paulefl/beaglebone-tooling/releases/latest" \
+	  | python3 -c "import sys,json; data=json.load(sys.stdin); \
+	    asset=next(a for a in data['assets'] if 'tooling-' in a['name']); \
+	    print(asset['browser_download_url'])" \
+	  | xargs curl -sL | tar xz -C tooling
+	chmod +x tooling/*.sh tooling/bausteinsicht
+	@echo "✅ Tooling in tooling/ bereit"
+
+test-report: tooling-download
 	./tooling/report.sh
 
-test-report-open:
+test-report-open: tooling-download
 	./tooling/report.sh --open
 
 deploy:
@@ -58,7 +69,7 @@ deploy:
 	  debian@192.168.7.2:/app/
 	ssh debian@192.168.7.2 "systemctl restart embedded-sw"
 
-req-tracing:
+req-tracing: tooling-download
 	strictdoc --debug export . --formats html     --output-dir output/strictdoc
 	strictdoc --debug export . --formats html2pdf --output-dir output/strictdoc
 	strictdoc --debug export . --formats excel    --output-dir output/strictdoc
@@ -73,4 +84,4 @@ clean:
 version:
 	@echo "$(VERSION)"
 
-.PHONY: all c-lib rust-lib go-api cli test test-ci test-cover lint test-python test-report test-report-open deploy clean req-tracing version
+.PHONY: all c-lib rust-lib go-api cli test test-ci test-cover lint test-python tooling-download test-report test-report-open deploy clean req-tracing version
