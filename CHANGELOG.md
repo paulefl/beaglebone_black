@@ -61,6 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - HTTP-Server mit ReadTimeout/WriteTimeout/IdleTimeout (Issue #21) (#77) (#77)
 - Regression Test für BME280StreamHandler Flusher nil-Check (Issue #27) (#79) (#79)
 - Flag.Parse() aus Library-Package entfernt (Issue #26) (#81) (#81)
+- CORS OPTIONS Preflight-Requests behandeln — CORSMiddleware als zentraler Wrapper (Issue #22) (#83) (#83)
 
 
 # Changelog

@@ -44,7 +44,7 @@ func main() {
 	r.HandleFunc("/api/v1/backend", backendHandler(srv)).Methods("POST")
 
 	log.Printf("API läuft auf :5000")
-	httpSrv := api.NewHTTPServer(":5000", r)
+	httpSrv := api.NewHTTPServer(":5000", api.CORSMiddleware(r))
 	log.Fatal(httpSrv.ListenAndServe())
 }
 
@@ -52,7 +52,6 @@ func main() {
 func backendHandler(srv *api.Server) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Access-Control-Allow-Origin", "*")
 		var req struct {
 			Backend string `json:"backend"`
 		}
