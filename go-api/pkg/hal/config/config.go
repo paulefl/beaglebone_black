@@ -1,7 +1,6 @@
 package config
 
 import (
-	"flag"
 	"os"
 	"strings"
 	"time"
@@ -18,19 +17,21 @@ type Config struct {
 	Timeout    time.Duration
 }
 
-func LoadConfig() *Config {
-	backend := flag.String("backend", "auto", "c | rust | auto")
-	uartPort := flag.String("uart", "/dev/ttyO1", "UART Port")
-	i2cBus := flag.String("i2c", "/dev/i2c-1", "I2C Bus")
-	flag.Parse()
-	if env := os.Getenv("HW_BACKEND"); env != "" {
-		*backend = env
+func getEnv(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
 	}
+	return fallback
+}
+
+// LoadConfig liest Konfiguration ausschließlich aus Umgebungsvariablen (SWR-008).
+// Unterstützte Variablen: HW_BACKEND, HW_I2C, HW_UART
+func LoadConfig() *Config {
 	return &Config{
-		Backend:    strings.ToLower(*backend),
-		I2CBus:     *i2cBus,
+		Backend:    strings.ToLower(getEnv("HW_BACKEND", "auto")),
+		I2CBus:     getEnv("HW_I2C", "/dev/i2c-1"),
 		BME280Addr: 0x76,
-		UARTPort:   *uartPort,
+		UARTPort:   getEnv("HW_UART", "/dev/ttyO1"),
 		UARTBaud:   115200,
 		SPIDevice:  "/dev/spidev0.0",
 		SPISpeed:   1000000,
