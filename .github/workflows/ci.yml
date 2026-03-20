@@ -56,6 +56,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: paulefl/beaglebone-tooling/.github/actions/download-tooling@v1.1.15
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: paulefl/beaglebone-tooling/.github/actions/shellcheck-sarif@v1.1.16
 
