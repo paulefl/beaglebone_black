@@ -13,10 +13,10 @@ set -euo pipefail
 
 GREEN='\033[0;32m'; BLUE='\033[0;34m'; YELLOW='\033[1;33m'; RED='\033[0;31m'
 BOLD='\033[1m'; NC='\033[0m'
-log()     { echo -e "${BLUE}[TEST]${NC}  $*"; }
-success() { echo -e "${GREEN}[PASS]${NC}  $*"; }
-warn()    { echo -e "${YELLOW}[WARN]${NC}  $*"; }
-fail()    { echo -e "${RED}[FAIL]${NC}  $*"; }
+log()     { echo -e "${BLUE}[TEST]${NC}  $*"; return 0; }
+success() { echo -e "${GREEN}[PASS]${NC}  $*"; return 0; }
+warn()    { echo -e "${YELLOW}[WARN]${NC}  $*"; return 0; }
+fail()    { echo -e "${RED}[FAIL]${NC}  $*" >&2; return 0; }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -47,6 +47,7 @@ parse_args() {
             *) fail "Unbekanntes Argument: $arg"; exit 1 ;;
         esac
     done
+    return 0
 }
 
 # ── Tests ausführen ───────────────────────────────────────────────────────────
@@ -159,6 +160,7 @@ main() {
 
     echo ""
     success "Fertig"
+    return 0
 }
 
 main "$@"
