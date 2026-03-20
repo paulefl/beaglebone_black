@@ -15,11 +15,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: paulefl/beaglebone-tooling/.github/actions/download-tooling@v1.1.3
+      - uses: paulefl/beaglebone-tooling/.github/actions/download-tooling@v1.1.4
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: paulefl/beaglebone-tooling/.github/actions/go-test@v1.1.3
+      - uses: paulefl/beaglebone-tooling/.github/actions/go-test@v1.1.4
         with:
           coverpkg: './pkg/hal/,./pkg/hal/mock/,./pkg/hal/config/'
           test-packages: './pkg/hal/ ./pkg/hal/mock/ ./pkg/hal/config/'
@@ -32,7 +32,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: paulefl/beaglebone-tooling/.github/actions/c-test@v1.1.3
+      - uses: paulefl/beaglebone-tooling/.github/actions/c-test@v1.1.4
 
   # ── Go Lint ──────────────────────────────────
   lint-go:
@@ -67,11 +67,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: paulefl/beaglebone-tooling/.github/actions/download-tooling@v1.1.3
+      - uses: paulefl/beaglebone-tooling/.github/actions/download-tooling@v1.1.4
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: paulefl/beaglebone-tooling/.github/actions/shellcheck-sarif@v1.1.3
+      - uses: paulefl/beaglebone-tooling/.github/actions/shellcheck-sarif@v1.1.4
 
   # ── Python Tests (API Mock) ───────────────────
   test-python:
@@ -192,11 +192,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: paulefl/beaglebone-tooling/.github/actions/download-tooling@v1.1.3
+      - uses: paulefl/beaglebone-tooling/.github/actions/download-tooling@v1.1.4
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: paulefl/beaglebone-tooling/.github/actions/strictdoc@v1.1.3
+      - uses: paulefl/beaglebone-tooling/.github/actions/strictdoc@v1.1.4
 
   # ── SonarCloud Quality Analysis ───────────────
   sonarcloud:
@@ -209,7 +209,7 @@ jobs:
         with:
           fetch-depth: 0  # vollständige History für blame/annotations
 
-      - uses: paulefl/beaglebone-tooling/.github/actions/sonarcloud@v1.1.3
+      - uses: paulefl/beaglebone-tooling/.github/actions/sonarcloud@v1.1.4
         with:
           sonar-token: ${{ secrets.SONAR_TOKEN }}
 
@@ -226,11 +226,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: paulefl/beaglebone-tooling/.github/actions/download-tooling@v1.1.3
+      - uses: paulefl/beaglebone-tooling/.github/actions/download-tooling@v1.1.4
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: paulefl/beaglebone-tooling/.github/actions/test-report@v1.1.3
+      - uses: paulefl/beaglebone-tooling/.github/actions/test-report@v1.1.4
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
