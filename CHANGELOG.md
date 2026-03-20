@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Refactoring
+
+- refactor(go): Duplicate string literals durch Konstanten ersetzen — `colorPrimary`, `gpioAPIPath`, `gpioValueHigh`, `spiModeDefault`, `errInvalidBody` (SonarQube S1192 CRITICAL, #112)
+
 ### Infrastruktur & Tooling
 
 - Use container script instead of inline podman commands 
