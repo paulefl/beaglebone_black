@@ -209,68 +209,9 @@ jobs:
         with:
           fetch-depth: 0  # vollständige History für blame/annotations
 
-      - name: Download Go reports
-        uses: actions/download-artifact@v8
+      - uses: paulefl/beaglebone-tooling/.github/actions/sonarcloud@v1.1.3
         with:
-          name: go-reports
-          path: reports/
-        continue-on-error: true
-
-      - name: Download Python reports
-        uses: actions/download-artifact@v8
-        with:
-          name: python-reports
-          path: reports/
-        continue-on-error: true
-
-      - name: Download C reports
-        uses: actions/download-artifact@v8
-        with:
-          name: c-reports
-          path: c-reports/
-        continue-on-error: true
-
-      - name: Arrange C reports
-        run: |
-          mkdir -p reports c-lib
-          # upload-artifact preserves directory structure
-          cp c-reports/reports/c-coverage.info reports/c-coverage.info 2>/dev/null || true
-          cp c-reports/c-lib/compile_commands.json c-lib/compile_commands.json 2>/dev/null || true
-
-      - name: Download ShellCheck SARIF
-        uses: actions/download-artifact@v8
-        with:
-          name: shell-sarif
-          path: reports/
-        continue-on-error: true
-
-      - name: SonarCloud Scan
-        id: sonar
-        uses: SonarSource/sonarqube-scan-action@v6
-        continue-on-error: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN:  ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: https://sonarcloud.io
-
-      - name: SonarCloud Ergebnis prüfen
-        if: always()
-        run: |
-          if [ "${{ steps.sonar.outcome }}" = "failure" ]; then
-            if [ -z "${{ secrets.SONAR_TOKEN }}" ]; then
-              echo "⚠️  SonarCloud übersprungen: SONAR_TOKEN nicht gesetzt"
-            else
-              echo "❌ SonarCloud Scan fehlgeschlagen (exit code: ${{ steps.sonar.conclusion }})"
-              echo "   Mögliche Ursachen:"
-              echo "   - Compilation Database fehlt für C/C++ (sonar.cfamily.compile-commands)"
-              echo "   - Ungültiger SONAR_TOKEN"
-              echo "   - Falsches sonar.projectKey / sonar.organization"
-              echo "   → Logs: gh run view ${{ github.run_id }} --log --job ${{ github.job }}"
-              exit 1
-            fi
-          else
-            echo "✅ SonarCloud Scan erfolgreich"
-          fi
+          sonar-token: ${{ secrets.SONAR_TOKEN }}
 
   # ── Test Report + Trend ───────────────────────
   report:
