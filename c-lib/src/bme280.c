@@ -69,7 +69,13 @@ static double comp_hum(bme280_dev_t *dev, int32_t raw) {
       ((double)c->H2/65536.0*(1.0+(double)c->H6/67108864.0*h*
       (1.0+(double)c->H3/67108864.0*h)));
     h*=1.0-(double)c->H1*h/524288.0;
-    if(h>100.0)h=100.0; if(h<0.0)h=0.0; return h;
+    if(h>100.0) {
+      h=100.0;
+    }
+    else if(h<0.0) {
+        h=0.0;
+    }
+    return h;
 }
 int bme280_read(bme280_dev_t *dev, bme280_data_t *out) {
     uint8_t raw[8];
