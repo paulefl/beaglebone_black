@@ -14,6 +14,12 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+const (
+	gpioAPIPath    = "/api/v1/gpio/"
+	gpioValueHigh  = "HIGH (1)"
+	spiModeDefault = "Mode 0"
+)
+
 var apiBase = "http://192.168.7.2:5000"
 
 // ── API Helper ───────────────────────────────────────────────────
@@ -136,8 +142,8 @@ func gpioTab() *fyne.Container {
 	pinEntry.SetPlaceHolder("z.B. 60")
 	dirSelect := widget.NewSelect([]string{"out", "in"}, nil)
 	dirSelect.SetSelected("out")
-	valSelect := widget.NewSelect([]string{"HIGH (1)", "LOW (0)"}, nil)
-	valSelect.SetSelected("HIGH (1)")
+	valSelect := widget.NewSelect([]string{gpioValueHigh, "LOW (0)"}, nil)
+	valSelect.SetSelected(gpioValueHigh)
 	status := widget.NewLabel("")
 
 	configBtn := widget.NewButton("⚙️ Konfigurieren", func() {
@@ -146,8 +152,8 @@ func gpioTab() *fyne.Container {
 			status.SetText("❌ Pin eingeben!")
 			return
 		}
-		apiPost("/api/v1/gpio/"+pin+"/export", nil, nil)
-		apiPost("/api/v1/gpio/"+pin+"/direction",
+		apiPost(gpioAPIPath+pin+"/export", nil, nil)
+		apiPost(gpioAPIPath+pin+"/direction",
 			map[string]string{"direction": dirSelect.Selected}, nil)
 		status.SetText(fmt.Sprintf("✅ Pin %s → %s", pin, dirSelect.Selected))
 	})
@@ -159,10 +165,10 @@ func gpioTab() *fyne.Container {
 			return
 		}
 		val := 0
-		if valSelect.Selected == "HIGH (1)" {
+		if valSelect.Selected == gpioValueHigh {
 			val = 1
 		}
-		apiPost("/api/v1/gpio/"+pin,
+		apiPost(gpioAPIPath+pin,
 			map[string]interface{}{"value": val, "backend": "auto"}, nil)
 		status.SetText(fmt.Sprintf("✅ Pin %s = %d", pin, val))
 	})
@@ -236,8 +242,8 @@ func spiTab() *fyne.Container {
 	speedEntry := widget.NewEntry()
 	speedEntry.SetText("1000000")
 	modeSelect := widget.NewSelect([]string{
-		"Mode 0", "Mode 1", "Mode 2", "Mode 3"}, nil)
-	modeSelect.SetSelected("Mode 0")
+		spiModeDefault, "Mode 1", "Mode 2", "Mode 3"}, nil)
+	modeSelect.SetSelected(spiModeDefault)
 	txEntry := widget.NewEntry()
 	txEntry.SetPlaceHolder("Hex z.B. 0102FF")
 	rxLabel := widget.NewLabel("RX: --")
@@ -253,7 +259,7 @@ func spiTab() *fyne.Container {
 		widget.NewButton("💾 Konfigurieren", func() {
 			var speed, mode int
 			fmt.Sscanf(speedEntry.Text, "%d", &speed)
-			for i, m := range []string{"Mode 0", "Mode 1", "Mode 2", "Mode 3"} {
+			for i, m := range []string{spiModeDefault, "Mode 1", "Mode 2", "Mode 3"} {
 				if m == modeSelect.Selected {
 					mode = i
 				}
