@@ -56,11 +56,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: paulefl/beaglebone-tooling/.github/actions/download-tooling@v1.1.16
+      - uses: paulefl/beaglebone-tooling/.github/actions/shellcheck-sarif@v1.1.17
+        with:
+          include-tooling: 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - uses: paulefl/beaglebone-tooling/.github/actions/shellcheck-sarif@v1.1.16
 
   # ── Python Tests (API Mock) ───────────────────
   test-python:
