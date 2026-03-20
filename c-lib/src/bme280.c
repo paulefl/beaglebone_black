@@ -1,4 +1,5 @@
 #include "bme280.h"
+#include "common.h"
 #include <stdio.h>
 #include <math.h>
 #include <fcntl.h>
@@ -14,20 +15,35 @@ static int i2c_read_reg(int fd, uint8_t reg, uint8_t *buf, int len) {
     if(write(fd,&reg,1)!=1) return -1;
     return read(fd,buf,len)!=len?-1:0;
 }
+
 static int read_calibration(bme280_dev_t *dev) {
+    int returnValue = -1;
     uint8_t buf[24];
-    if(i2c_read_reg(dev->fd,0x88,buf,24)<0) return -1;
-    bme280_calib_t *c=&dev->calib;
-    c->T1=buf[0]|(buf[1]<<8); c->T2=buf[2]|(buf[3]<<8); c->T3=buf[4]|(buf[5]<<8);
-    c->P1=buf[6]|(buf[7]<<8); c->P2=buf[8]|(buf[9]<<8); c->P3=buf[10]|(buf[11]<<8);
-    c->P4=buf[12]|(buf[13]<<8); c->P5=buf[14]|(buf[15]<<8); c->P6=buf[16]|(buf[17]<<8);
-    c->P7=buf[18]|(buf[19]<<8); c->P8=buf[20]|(buf[21]<<8); c->P9=buf[22]|(buf[23]<<8);
-    uint8_t h1[1]; i2c_read_reg(dev->fd,0xA1,h1,1); c->H1=h1[0];
-    uint8_t hb[7]; i2c_read_reg(dev->fd,0xE1,hb,7);
-    c->H2=hb[0]|(hb[1]<<8); c->H3=hb[2];
-    c->H4=((int16_t)hb[3]<<4)|(hb[4]&0x0F);
-    c->H5=((int16_t)hb[5]<<4)|(hb[4]>>4); c->H6=(int8_t)hb[6];
-    return 0;
+     if (i2c_read_reg(dev->fd,0x88,buf,24) >= 0)  {
+        bme280_calib_t *c=&dev->calib;
+        c->T1=pack2bytesInUint16(buf[0],buf[1]); 
+        c->T2=pack2bytesInInt16(buf[2],buf[3]); 
+        c->T3=pack2bytesInInt16(buf[4],buf[5]); 
+        c->P1=pack2bytesInUint16(buf[6],buf[7]); 
+        c->P2=pack2bytesInInt16(buf[8],buf[9]);  
+        c->P3=pack2bytesInInt16(buf[10],buf[11]); 
+        c->P4=pack2bytesInInt16(buf[12],buf[13]); 
+        c->P5=pack2bytesInInt16(buf[14],buf[15]);  
+        c->P6=pack2bytesInInt16(buf[16],buf[17]); 
+        c->P7=pack2bytesInInt16(buf[18],buf[19]);  
+        c->P8=pack2bytesInInt16(buf[20],buf[21]);  
+        c->P9=pack2bytesInInt16(buf[22],buf[23]); 
+        uint8_t h1[1]; i2c_read_reg(dev->fd,0xA1,h1,1); 
+        c->H1=h1[0];
+        uint8_t hb[7]; i2c_read_reg(dev->fd,0xE1,hb,7);
+        c->H2=pack2bytesInInt16(hb[0],hb[1]);
+        c->H3=hb[2];
+        c->H4=((int16_t)hb[3]<<4)|(hb[4]&0x0F);
+        c->H5=((int16_t)hb[5]<<4)|(hb[4]>>4); 
+        c->H6=(int8_t)hb[6];
+        returnValue = 0;
+    }
+    return returnValue;
 }
 int bme280_init(bme280_dev_t *dev) {
     dev->fd=open(BME280_I2C_BUS,O_RDWR);
