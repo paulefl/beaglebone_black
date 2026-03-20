@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixes
+
+- fix(shell): ShellCheck-Findings SC2034/SC2188/SC2069/SC2064 in Tooling-Scripts und `scripts/install.sh` behoben (#143)
+
 ### Infrastruktur & Tooling
 
 - Use container script instead of inline podman commands 
