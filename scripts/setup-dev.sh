@@ -50,6 +50,7 @@ install_go() {
     # Permanent in Shell-Config eintragen
     for rc in ~/.bashrc ~/.zshrc; do
         if [[ -f "$rc" ]] && ! grep -q '/usr/local/go/bin' "$rc"; then
+            # shellcheck disable=SC2016  # Single quotes intentional: $PATH must not expand here
             echo 'export PATH="/usr/local/go/bin:$PATH"' >> "$rc"
         fi
     done
@@ -79,10 +80,12 @@ install_rust() {
     else
         log "Installiere Rust..."
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --quiet
+        # shellcheck source=/dev/null  # Dynamic path, not followable at static analysis time
         source "$HOME/.cargo/env"
         success "Rust $(cargo --version) installiert"
     fi
 
+    # shellcheck source=/dev/null  # Dynamic path, not followable at static analysis time
     source "$HOME/.cargo/env" 2>/dev/null || true
 
     log "Füge ARM-Target hinzu..."
