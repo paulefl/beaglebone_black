@@ -171,6 +171,11 @@ jobs:
         with:
           sonar-token: ${{ secrets.SONAR_TOKEN }}
 
+      - uses: paulefl/beaglebone-tooling/.github/actions/sonarqube-report@main
+        with:
+          sonar-token: ${{ secrets.SONAR_TOKEN }}
+          project-key: paulefl_beaglebone_black
+
   # ── Test Report + Trend ───────────────────────
   report:
     name: Test Report
