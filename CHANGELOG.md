@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixes
+
+- fix(c): if-Statement auf neue Zeile und else ergänzt in bme280.c — SonarQube S3972 CRITICAL (#116)
+
 ### Infrastruktur & Tooling
 
 - Use container script instead of inline podman commands 
