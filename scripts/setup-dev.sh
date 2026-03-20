@@ -8,10 +8,10 @@
 set -euo pipefail
 
 GREEN='\033[0;32m'; BLUE='\033[0;34m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
-log()     { echo -e "${BLUE}[INFO]${NC}  $*"; }
-success() { echo -e "${GREEN}[OK]${NC}    $*"; }
-warn()    { echo -e "${YELLOW}[WARN]${NC}  $*"; }
-error()   { echo -e "${RED}[ERROR]${NC} $*"; exit 1; }
+log()     { echo -e "${BLUE}[INFO]${NC}  $*"; return 0; }
+success() { echo -e "${GREEN}[OK]${NC}    $*"; return 0; }
+warn()    { echo -e "${YELLOW}[WARN]${NC}  $*"; return 0; }
+error()   { echo -e "${RED}[ERROR]${NC} $*" >&2; exit 1; }
 
 GO_VERSION="1.23.8"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -50,6 +50,7 @@ install_go() {
     # Permanent in Shell-Config eintragen
     for rc in ~/.bashrc ~/.zshrc; do
         if [[ -f "$rc" ]] && ! grep -q '/usr/local/go/bin' "$rc"; then
+            # shellcheck disable=SC2016  # Single quotes intentional: $PATH must not expand here
             echo 'export PATH="/usr/local/go/bin:$PATH"' >> "$rc"
         fi
     done
@@ -79,10 +80,12 @@ install_rust() {
     else
         log "Installiere Rust..."
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --quiet
+        # shellcheck source=/dev/null  # Dynamic path, not followable at static analysis time
         source "$HOME/.cargo/env"
         success "Rust $(cargo --version) installiert"
     fi
 
+    # shellcheck source=/dev/null  # Dynamic path, not followable at static analysis time
     source "$HOME/.cargo/env" 2>/dev/null || true
 
     log "Füge ARM-Target hinzu..."
@@ -103,6 +106,7 @@ install_rust() {
     else
         success "cbindgen bereits installiert"
     fi
+    return 0
 }
 
 # ── GitHub CLI ────────────────────────────────────────────────────────────────
@@ -137,6 +141,7 @@ install_python_deps() {
     else
         warn "pip3 nicht gefunden — Python Tests nicht verfügbar"
     fi
+    return 0
 }
 
 # ── Go Module ─────────────────────────────────────────────────────────────────
@@ -144,6 +149,7 @@ go_mod_tidy() {
     log "Führe go mod tidy aus..."
     (cd "$REPO_ROOT/go-api" && go mod tidy)
     success "go.sum aktualisiert"
+    return 0
 }
 
 # ── Verify ────────────────────────────────────────────────────────────────────
@@ -151,6 +157,7 @@ verify() {
     log "Verifiziere Setup..."
     (cd "$REPO_ROOT/go-api" && go vet ./...) && success "go vet OK"
     (cd "$REPO_ROOT/go-api" && go test ./pkg/hal/... -count=1 -timeout 30s) && success "Tests OK"
+    return 0
 }
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -196,6 +203,7 @@ main() {
     echo ""
     success "Setup abgeschlossen!"
     echo ""
+    return 0
 }
 
 main "$@"

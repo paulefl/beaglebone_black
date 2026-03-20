@@ -170,6 +170,13 @@ jobs:
         with:
           fetch-depth: 0  # vollständige History für blame/annotations
 
+      - name: Checkout tooling scripts for SARIF path resolution
+        uses: actions/checkout@v4
+        with:
+          repository: paulefl/beaglebone-tooling
+          ref: v1.1.21
+          path: tooling
+
       - uses: paulefl/beaglebone-tooling/.github/actions/sonarcloud@v1.1.21
         with:
           sonar-token: ${{ secrets.SONAR_TOKEN }}

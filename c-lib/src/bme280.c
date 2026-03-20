@@ -33,13 +33,13 @@ static int read_calibration(bme280_dev_t *dev) {
         c->P7=pack2bytesInInt16(buf[18],buf[19]);  
         c->P8=pack2bytesInInt16(buf[20],buf[21]);  
         c->P9=pack2bytesInInt16(buf[22],buf[23]); 
-        uint8_t h1[1]; i2c_read_reg(dev->fd,0xA1,h1,1); 
+        uint8_t h1[1] = {0}; i2c_read_reg(dev->fd,0xA1,h1,1);
         c->H1=h1[0];
-        uint8_t hb[7]; i2c_read_reg(dev->fd,0xE1,hb,7);
+        uint8_t hb[7] = {0}; i2c_read_reg(dev->fd,0xE1,hb,7);
         c->H2=pack2bytesInInt16(hb[0],hb[1]);
         c->H3=hb[2];
-        c->H4=((int16_t)hb[3]<<4)|(hb[4]&0x0F);
-        c->H5=((int16_t)hb[5]<<4)|(hb[4]>>4); 
+        c->H4=((int16_t)hb[3]<<4)|((int16_t)(hb[4]&0x0F));
+        c->H5=((int16_t)hb[5]<<4)|((int16_t)(hb[4]>>4));
         c->H6=(int8_t)hb[6];
         returnValue = 0;
     }
