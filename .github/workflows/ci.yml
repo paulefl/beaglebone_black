@@ -239,6 +239,9 @@ jobs:
             echo "No changelog changes — nothing to commit."
             exit 0
           fi
+          # Rebase auf aktuellen main um Race Condition gegen parallele Commits zu vermeiden
+          git fetch origin main
+          git rebase origin/main
           BRANCH="ci/update-changelog-$(echo ${{ github.sha }} | cut -c1-7)"
           git checkout -b "$BRANCH"
           git commit -m "docs(changelog): update unreleased section [skip ci]"
