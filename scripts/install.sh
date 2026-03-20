@@ -70,7 +70,7 @@ resolve_version() {
 download_tools() {
     local os arch tmpdir
     os=$(detect_os); arch=$(detect_arch)
-    tmpdir=$(mktemp -d); trap "rm -rf $tmpdir" EXIT
+    tmpdir=$(mktemp -d); trap 'rm -rf '"$tmpdir" EXIT
 
     log "Plattform: $os/$arch"
     BASE_URL="$REPO_BASE/$REPO_USER/$REPO_NAME/releases/download/$VERSION"
