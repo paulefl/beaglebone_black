@@ -181,7 +181,7 @@ jobs:
       - uses: paulefl/beaglebone-tooling/.github/actions/sonarcloud@v1.1.21
         with:
           sonar-token: ${{ secrets.SONAR_TOKEN }}
-          qualitygate-wait: false
+          qualitygate-wait: 'false'
 
       - uses: paulefl/beaglebone-tooling/.github/actions/sonarqube-report@main
         with:
