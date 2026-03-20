@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixes
+
+- fix(shell): `*)` Default-Case in `report.sh` (SonarQube S131 CRITICAL) — beaglebone-tooling v1.1.16 ([#115](https://github.com/paulefl/beaglebone_black/issues/115))
+- fix(ci): `download-tooling` vor `shellcheck-sarif` in `test-scripts`-Job, damit `tooling/report.sh` gescannt wird ([#115](https://github.com/paulefl/beaglebone_black/issues/115))
+
+
 ### Infrastruktur & Tooling
 
 - Use container script instead of inline podman commands 
