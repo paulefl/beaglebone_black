@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixes
+
+- fix(c): explizite Casts für integer precision conversions in `bme280.c` und `spi.c`, neue Hilfsmakros `pack2bytesInUint16`/`pack2bytesInInt16` (SonarQube c:S5276 MAJOR, #138)
+
 ### Infrastruktur & Tooling
 
 - Use container script instead of inline podman commands 
