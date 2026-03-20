@@ -12,11 +12,13 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+const colorPrimary = "#38bdf8"
+
 // ── Styles ───────────────────────────────────────────────────────
 var (
 	titleStyle = lipgloss.NewStyle().
 			Bold(true).
-			Foreground(lipgloss.Color("#38bdf8")).
+			Foreground(lipgloss.Color(colorPrimary)).
 			BorderStyle(lipgloss.RoundedBorder()).
 			BorderForeground(lipgloss.Color("#334155")).
 			Padding(0, 1)
@@ -29,10 +31,10 @@ var (
 
 	activeTabStyle = lipgloss.NewStyle().
 			Bold(true).
-			Foreground(lipgloss.Color("#38bdf8")).
+			Foreground(lipgloss.Color(colorPrimary)).
 			BorderBottom(true).
 			BorderStyle(lipgloss.NormalBorder()).
-			BorderForeground(lipgloss.Color("#38bdf8")).
+			BorderForeground(lipgloss.Color(colorPrimary)).
 			Padding(0, 2)
 
 	inactiveTabStyle = lipgloss.NewStyle().

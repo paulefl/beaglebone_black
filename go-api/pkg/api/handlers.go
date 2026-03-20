@@ -14,6 +14,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
+const errInvalidBody = "invalid request body: "
+
 // Server holds the shared state for all HTTP handlers.
 type Server struct {
 	HW   hal.HardwareDriver
@@ -115,7 +117,7 @@ func (s *Server) GPIOWriteHandler(w http.ResponseWriter, r *http.Request) {
 		Value int `json:"value"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body: "+err.Error(), http.StatusBadRequest)
+		http.Error(w, errInvalidBody+err.Error(), http.StatusBadRequest)
 		return
 	}
 	s.HWMu.Lock()
@@ -135,7 +137,7 @@ func (s *Server) UARTConfigHandler(w http.ResponseWriter, r *http.Request) {
 		Baud uint32 `json:"baud"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body: "+err.Error(), http.StatusBadRequest)
+		http.Error(w, errInvalidBody+err.Error(), http.StatusBadRequest)
 		return
 	}
 	if req.Port == "" {
@@ -162,7 +164,7 @@ func (s *Server) UARTSendHandler(w http.ResponseWriter, r *http.Request) {
 		Data []byte `json:"data"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body: "+err.Error(), http.StatusBadRequest)
+		http.Error(w, errInvalidBody+err.Error(), http.StatusBadRequest)
 		return
 	}
 	s.HWMu.Lock()
@@ -195,7 +197,7 @@ func (s *Server) SPITransferHandler(w http.ResponseWriter, r *http.Request) {
 		TX     []byte `json:"tx"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body: "+err.Error(), http.StatusBadRequest)
+		http.Error(w, errInvalidBody+err.Error(), http.StatusBadRequest)
 		return
 	}
 	s.HWMu.Lock()
