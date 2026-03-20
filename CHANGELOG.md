@@ -51,6 +51,102 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump beaglebone-tooling actions to v1.1.5 
 - Update unreleased section [skip ci] (#97) (#97)
 - Bump beaglebone-tooling actions to v1.1.6 
+- Update unreleased section [skip ci] (#98) (#98)
+- Replace all inline steps with beaglebone-tooling composite actions @v1.1.7 
+
+### Software-Änderungen
+
+- Podman container script and CI workflow (#45) (#46) (#46)
+- Mount model dir rw, fix export paths, add export dirs step 
+- Disable git credential prompt for public repo clone 
+- Bypass git credential helper for public repo clone 
+- Move git clone to workflow step, script only builds image 
+- Use actions/checkout to clone Bausteinsicht repo 
+- Drop container approach, run binary directly in CI 
+- Install draw.io CLI and use xvfb-run for PNG export 
+- SonarCloud Integration für Quality Monitoring (#47) (#48) (#48)
+- Remove duplicate OUTPUT env for git-cliff, increase Pages smoke-test sleep to 30s 
+- Replace fixed sleep with retry loop for Pages smoke-test (max 3min) 
+- Git-cliff write to temp file then prepend to CHANGELOG.md 
+- Copy bb_dashboard.html to index.html for GitHub Pages 
+- Start_ticket zeigt automatisch Issue-Liste bei leerem Argument (#61) (#61)
+- Automatisches PR-Review mit Bot-Token-Support in start_ticket (#64) (#64)
+- ShellCheck SARIF Report für SonarCloud (#55) (#68) (#68)
+- Deaktiviere C/C++ SonarCloud-Analyse + verbessertes Error Reporting (#70) (#70)
+- POST /api/v1/backend wechselt jetzt tatsächlich den HAL-Backend (#72) (#72)
+- Trend-Cache Git-Fallback via reports-Branch (#74) (#74)
+- POST-Handler geben 400 bei ungültigem JSON zurück (#75) (#75)
+- HTTP-Server mit ReadTimeout/WriteTimeout/IdleTimeout (Issue #21) (#77) (#77)
+- Regression Test für BME280StreamHandler Flusher nil-Check (Issue #27) (#79) (#79)
+- Flag.Parse() aus Library-Package entfernt (Issue #26) (#81) (#81)
+- CORS OPTIONS Preflight-Requests behandeln (Issue #22) (#83) (#83)
+- Collect_results.py + statisch/dynamisch Trennung (Issue #15) (#84) (#84)
+- Phase 1 — Tooling in tooling/ Ordner gruppieren (Issue #85) (#86) (#86)
+- Phase 3 — tooling/ aus Repo entfernen, via Release-Download (Issue #85) (#87) (#87)
+- C Code Coverage CI-Integration (#88) (#88)
+- Use download-tooling composite action 
+- Use go-test composite action 
+- Use shellcheck-sarif and c-test composite actions 
+- Add explicit download-tooling step before go-test 
+- Git worktree --orphan syntax für git 2.40+ 
+- Use strictdoc and test-report composite actions 
+- Use sonarcloud composite action 
+- Remove download-tooling steps — scripts via GITHUB_ACTION_PATH 
+
+
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Infrastruktur & Tooling
+
+- Use container script instead of inline podman commands 
+- Separate build step from run commands 
+- Add export-diagram, export-table and export-png steps 
+- Commit export changes back to repo if files changed 
+- Update exported diagrams [skip ci] 
+- Update exported diagrams [skip ci] 
+- Trigger only on beaglebone_black.jsonc changes 
+- Trigger SonarCloud verification 
+- Update unreleased section [skip ci] 
+- Update unreleased section [skip ci] 
+- Update unreleased section [skip ci] 
+- Update unreleased section [skip ci] 
+- Gruppierung nach Software-Änderungen und Infrastruktur & Tooling (#65) (#65)
+- Erstelle PR statt direktem Push auf main (branch protection fix) (#66) (#66)
+- Update unreleased section [skip ci] (#67) (#67)
+- Update unreleased section [skip ci] (#69) (#69)
+- Update unreleased section [skip ci] (#71) (#71)
+- Update unreleased section [skip ci] (#73) (#73)
+- Update unreleased section [skip ci] 
+- Update unreleased section [skip ci] 
+- Update unreleased section [skip ci] (#76) (#76)
+- Add entry for Issue #31 fix (#75) [skip ci] 
+- Update unreleased section [skip ci] (#78) (#78)
+- Add entry for Issue #21 fix (#77) [skip ci] 
+- Update unreleased section [skip ci] (#80) (#80)
+- Add entry for Issue #27 fix (#79) [skip ci] 
+- Update unreleased section [skip ci] (#82) (#82)
+- Update unreleased section [skip ci] (#89) (#89)
+- Beaglebone-tooling auf v1.1.0 aktualisieren (#90) (#90)
+- Update unreleased section [skip ci] (#91) (#91)
+- Bump beaglebone-tooling actions to v1.1.1 
+- Update unreleased section [skip ci] (#92) (#92)
+- Bump beaglebone-tooling actions to v1.1.2 
+- Update unreleased section [skip ci] (#93) (#93)
+- Update unreleased section [skip ci] (#94) (#94)
+- Bump beaglebone-tooling actions to v1.1.3 
+- Update unreleased section [skip ci] (#95) (#95)
+- Bump beaglebone-tooling actions to v1.1.4 
+- Update unreleased section [skip ci] (#96) (#96)
+- Bump beaglebone-tooling actions to v1.1.5 
+- Update unreleased section [skip ci] (#97) (#97)
+- Bump beaglebone-tooling actions to v1.1.6 
 
 ### Software-Änderungen
 
