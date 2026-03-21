@@ -178,7 +178,7 @@ jobs:
           ref: v1.1.21
           path: tooling
 
-      - uses: paulefl/beaglebone-tooling/.github/actions/sonarcloud@v1.1.21
+      - uses: paulefl/beaglebone-tooling/.github/actions/sonarcloud@main
         with:
           sonar-token: ${{ secrets.SONAR_TOKEN }}
           qualitygate-wait: 'false'
