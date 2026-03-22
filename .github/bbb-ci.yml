@@ -1,0 +1,70 @@
+name: BBB CI/CD
+
+on:
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted
+    name: Build ARMv7 & Deploy to BBB
+    steps:
+      # 1️⃣ Checkout
+      - uses: actions/checkout@v4
+
+      # 2️⃣ Debug: Repo Struktur
+      - name: Show files
+        run: |
+          pwd
+          ls -la
+          find . -name "Dockerfile"
+          find . -name "entrypoint.sh"
+
+      # 3️⃣ Build ARMv7 container (QEMU required)
+      - name: Build ARMv7 container
+        run: |
+                  
+          podman build \
+            --arch arm \
+            --variant v7 \
+            -t bbb-dev:latest \
+            -f docker/bbb/Dockerfile \
+            docker/bbb
+
+      # 4️⃣ Optional: Test Cross-Compiled Binary
+      - name: List compiled binaries
+        run: |
+          podman run --rm bbb-dev:latest ls -la /home/bbbuser/project/bin
+
+      # 5️⃣ Deploy to BeagleBone Black via SSH
+      - name: Deploy container to BBB
+        env:
+          BBB_HOST: ${{ secrets.BBB_HOST }}
+          BBB_USER: ${{ secrets.BBB_USER }}
+        run: |
+          # Export SSH key
+          mkdir -p ~/.ssh
+          echo "${{ secrets.BBB_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+          # Push container image (alternativ: save & scp)
+          podman save bbb-dev:latest | bzip2 | ssh $BBB_USER@$BBB_HOST 'bunzip2 | podman load'
+
+          # Stop old container if exists
+          ssh $BBB_USER@$BBB_HOST 'podman stop bbb-dev || true && podman rm bbb-dev || true'
+
+          # Start container on BBB
+          ssh $BBB_USER@$BBB_HOST 'podman run -d \
+            --name bbb-dev \
+            --restart=always \
+            --privileged \
+            --cap-add=NET_RAW \
+            --device /dev/ttyUSB0 \
+            --device /dev/gpiochip0 \
+            bbb-dev:latest'
+
+      # 6️⃣ Verify BBB connectivity
+      - name: Ping BBB container
+        run: |
+          ssh $BBB_USER@$BBB_HOST 'podman exec bbb-dev ping -c 3 192.168.7.2'
