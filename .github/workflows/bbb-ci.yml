@@ -23,8 +23,7 @@ jobs:
 
       # 3️⃣ Build ARMv7 container (QEMU required)
       - name: Build ARMv7 container
-        run: |
-                  
+        run: |       
           podman build \
             --arch arm \
             --variant v7 \
