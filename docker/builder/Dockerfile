@@ -14,16 +14,14 @@ RUN apt-get update && apt-get install -y \
     git \
     ca-certificates \
     pkg-config \
-    python3 python3-pip python3-setuptools \
+    python3 \
+    python3-pip \
+    python3-setuptools \
     unzip \
-    && rm -rf /var/lib/apt/lists/*
-
-# ----------------------------
-# Install C Cross-Compiler for ARMv7
-# ----------------------------
-RUN apt-get update && apt-get install -y \
     gcc-arm-linux-gnueabihf \
     g++-arm-linux-gnueabihf \
+    libc6-dev-armhf-cross \
+    golang \
     && rm -rf /var/lib/apt/lists/*
 
 # ----------------------------
@@ -37,20 +35,19 @@ RUN rustup target add armv7-unknown-linux-gnueabihf
 
 # Create Cargo config for cross-linker
 RUN mkdir -p /root/.cargo && \
-    echo '[target.armv7-unknown-linux-gnueabihf]\nlinker = "arm-linux-gnueabihf-gcc"' > /root/.cargo/config.toml
+    echo '[target.armv7-unknown-linux-gnueabihf]' > /root/.cargo/config.toml && \
+    echo 'linker = "arm-linux-gnueabihf-gcc"' >> /root/.cargo/config.toml
 
-# ----------------------------
-# Install Go + Cross-Compile support
-# ----------------------------
-RUN curl -OL https://go.dev/dl/go1.21.2.linux-amd64.tar.gz && \
-    tar -C /usr/local -xzf go1.21.2.linux-amd64.tar.gz && \
-    rm go1.21.2.linux-amd64.tar.gz
+# --- Python Test Tools ---
+RUN pip3 install pytest
+
+
 ENV PATH="/usr/local/go/bin:${PATH}"
 
 # ----------------------------
 # Set working directory
 # ----------------------------
-WORKDIR /src
+WORKDIR /workspace
 
 # ----------------------------
 # Entrypoint to allow arbitrary commands
