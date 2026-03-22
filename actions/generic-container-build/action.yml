@@ -39,15 +39,17 @@ runs:
       run: |
         echo "Starting build in container ${CONTAINER_IMAGE}..."
         podman run --rm \
-          -v "${{ inputs.output_dir }}":/output \
-          -v "${{ inputs.source_dir }}":/src \
-          "${{ inputs.container_image }}" \
-          /bin/bash -c "
-            mkdir -p /output &&
+          -v "$OUTPUT_DIR:/output" \
+          -v "$SOURCE_DIR:/src" \
+          "$CONTAINER_IMAGE" \
+          /bin/bash -c <<'EOF' 
             set -e
+            mkdir -p /output
             ${BUILD_COMMANDS}
-          "
+          EOF
       env:
+        OUTPUT_DIR: ${{ inputs.output_dir }}
+        SOURCE_DIR: ${{ inputs.source_dir }}
         CONTAINER_IMAGE: ${{ inputs.container_image }}
         BUILD_COMMANDS: ${{ inputs.build_commands }}
 
