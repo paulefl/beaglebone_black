@@ -25,7 +25,7 @@ runs:
     - name: Build container
       shell: bash
       run: |
-        podman build -t bbb_bme260-builder:latest -f docker/builder/Dockerfile docker/builder
+        podman build -t "${{ inputs.container_image }}" -f docker/builder/Dockerfile docker/builder
     - name: Ensure output directory exists
       shell: bash
       run: |
