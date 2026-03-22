@@ -43,10 +43,10 @@ runs:
           -v "$SOURCE_DIR:/src" \
           "$CONTAINER_IMAGE" \
           /bin/bash <<'EOF' 
-            set -e
-            mkdir -p /output
-            ${BUILD_COMMANDS}
-          EOF
+set -e
+mkdir -p /output
+${BUILD_COMMANDS}
+EOF
       env:
         OUTPUT_DIR: ${{ inputs.output_dir }}
         SOURCE_DIR: ${{ inputs.source_dir }}
