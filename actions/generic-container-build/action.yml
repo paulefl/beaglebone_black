@@ -43,7 +43,6 @@ runs:
           -v "$SOURCE_DIR:/src" \
           "$CONTAINER_IMAGE" \
           -c ${BUILD_COMMANDS}
-          EOF
       env:
         OUTPUT_DIR: ${{ inputs.output_dir }}
         SOURCE_DIR: ${{ inputs.source_dir }}
