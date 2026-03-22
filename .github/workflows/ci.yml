@@ -9,6 +9,35 @@ on:
   workflow_dispatch:
 
 jobs:
+
+  
+  bbb-deploy:
+    name: Build & Deploy Docker on BBB via USB
+    runs-on: self-hosted
+    needs: [build-cli, build-tui]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker Image for BBB
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: bbb-dev:latest
+          platforms: linux/arm/v7
+
+      - name: Start Container with BBB USB Devices
+        run: |
+          docker stop bbb-dev || true
+          docker rm bbb-dev || true
+          docker run -d \
+            --name bbb-dev \
+            --restart unless-stopped \
+            --privileged \
+            --cap-add=NET_RAW \
+            --device /dev/ttyUSB0 \
+            --device /dev/gpiochip0 \
+            bbb-dev:latest
   # ── Go HAL Unit Tests (kein Hardware nötig) ──
   test-go:
     name: Go Unit Tests
