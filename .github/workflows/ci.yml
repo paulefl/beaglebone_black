@@ -19,11 +19,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Optional: QEMU für ARM
-      - name: Enable QEMU for ARM
-        run: |
-          sudo podman run --rm --privileged docker.io/multiarch/qemu-user-static --reset -p yes
-
       # Image bauen (ARMv7)
       - name: Build Image (ARMv7)
         run: |
@@ -55,7 +50,7 @@ jobs:
       - name: Test BBB connectivity
         run: |
           podman exec bbb-dev ping -c 3 192.168.7.2 || true
-          
+
   # ── Go HAL Unit Tests (kein Hardware nötig) ──
   test-go:
     name: Go Unit Tests
