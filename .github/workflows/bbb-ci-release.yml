@@ -1,0 +1,77 @@
+name: BBB CI/CD + Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-deploy-release:
+    runs-on: self-hosted
+    name: Build, Test, Deploy & Release
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup QEMU
+        run: sudo podman run --rm --privileged docker.io/multiarch/qemu-user-static --reset -p yes
+
+      - uses: ./actions/generic-container-build
+        with:
+          source_dir: ./project
+          output_dir: ./bin
+          container_image: generic-builder
+          build_commands: |
+            echo "=== Build C ==="
+            arm-linux-gnueabihf-gcc -o /output/bme260_main /src/c/main.c /src/c/bme260.c -I /src/c/include -lm &&
+            echo "=== Build Rust ==="
+            rustc --target=armv7-unknown-linux-gnueabihf -o /output/rust_app /src/rust/rust_app.rs &&
+            echo "=== Build Go ==="
+            GOOS=linux GOARCH=arm GOARM=7 go build -o /output/go_app /src/go/main.go
+          test_commands: |
+            echo "=== Run Python Tests ==="
+            python3 /src/tests/test_bme260.py
+
+      - name: Deploy to BBB
+        env:
+          BBB_HOST: ${{ secrets.BBB_HOST }}
+          BBB_USER: ${{ secrets.BBB_USER }}
+          BBB_SSH_KEY: ${{ secrets.BBB_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$BBB_SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          scp -i ~/.ssh/id_rsa bin/* $BBB_USER@$BBB_HOST:/home/$BBB_USER/bin/
+
+      - name: Run Tests on BBB
+        env:
+          BBB_HOST: ${{ secrets.BBB_HOST }}
+          BBB_USER: ${{ secrets.BBB_USER }}
+          BBB_SSH_KEY: ${{ secrets.BBB_SSH_KEY }}
+        run: |
+          ssh -t -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa $BBB_USER@$BBB_HOST "
+            set -e
+            mkdir -p /home/$BBB_USER/bin/logs
+            /home/$BBB_USER/bin/bme260_main | tee /home/$BBB_USER/bin/logs/c.log
+            /home/$BBB_USER/bin/rust_app | tee /home/$BBB_USER/bin/logs/rust.log
+            /home/$BBB_USER/bin/go_app | tee /home/$BBB_USER/bin/logs/go.log
+          "
+
+      - name: Fetch Logs
+        env:
+          BBB_HOST: ${{ secrets.BBB_HOST }}
+          BBB_USER: ${{ secrets.BBB_USER }}
+          BBB_SSH_KEY: ${{ secrets.BBB_SSH_KEY }}
+        run: |
+          mkdir -p logs
+          scp -i ~/.ssh/id_rsa -r $BBB_USER@$BBB_HOST:/home/$BBB_USER/bin/logs/* logs/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            bin/*
+            logs/*
+          name: ${{ github.ref_name }}
+          body: Automatischer Release für BBB CI/CD
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
