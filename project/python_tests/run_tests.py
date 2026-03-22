@@ -51,6 +51,7 @@ def main():
         print(f"\n--- Testing {binary['name']} ---")
         passed = run_binary(binary)
         if not passed:
+            print(f"\n--- Testing {binary['name']} failed ---")
             all_passed = False
 
     if all_passed:
