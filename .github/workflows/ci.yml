@@ -9,6 +9,7 @@ on:
   workflow_dispatch:
 
 jobs:
+
   # ── Go HAL Unit Tests (kein Hardware nötig) ──
   test-go:
     name: Go Unit Tests
