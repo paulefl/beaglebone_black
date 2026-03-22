@@ -1,34 +1,72 @@
 name: Generic Container Build + Test
-description: Build any code (C/Rust/Go) and run tests inside a container
+description: Build C/Rust/Go and run tests inside a container, with verified output for BBB deploy
+
 inputs:
   source_dir:
+    description: Source code directory (host path)
     required: true
   output_dir:
+    description: Output directory for binaries (host path)
     required: true
   container_image:
+    description: Container image to use for building
     required: true
   build_commands:
+    description: Multi-line shell commands to build binaries
     required: true
   test_commands:
+    description: Multi-line shell commands to run tests
     required: false
     default: ""
+
 runs:
   using: "composite"
   steps:
     - name: Ensure output directory exists
       shell: bash
-      run: mkdir -p ${{ inputs.output_dir }}
-    - name: Build Container
-      shell: bash
-      run: podman build -t ${{ inputs.container_image }} docker/builder
-    - name: Run Build Commands inside Container
+      run: |
+        echo "Ensuring output directory exists: $OUTPUT_DIR"
+        mkdir -p "$OUTPUT_DIR"
+      env:
+        OUTPUT_DIR: ${{ inputs.output_dir }}
+
+    - name: Run build inside container
       shell: bash
       run: |
-        set -e
-        podman run --rm -v ${{ inputs.output_dir }}:/output -v ${{ inputs.source_dir }}:/src ${{ inputs.container_image }} /bin/bash -c "${{ inputs.build_commands }}"
-    - name: Run Test Commands inside Container
-      if: ${{ inputs.test_commands != '' }}
+        echo "Starting build in container ${CONTAINER_IMAGE}..."
+        podman run --rm \
+          -v "${{ inputs.output_dir }}":/output \
+          -v "${{ inputs.source_dir }}":/src \
+          "${{ inputs.container_image }}" \
+          /bin/bash -c "
+            mkdir -p /output &&
+            set -e
+            ${BUILD_COMMANDS}
+          "
+      env:
+        CONTAINER_IMAGE: ${{ inputs.container_image }}
+        BUILD_COMMANDS: ${{ inputs.build_commands }}
+
+    - name: Run tests inside container
       shell: bash
-      run: | 
-        set -e
-        podman run --rm -v ${{ inputs.source_dir }}:/src ${{ inputs.container_image }} /bin/bash -c "${{ inputs.test_commands }}"
+      if: ${{ inputs.test_commands != '' }}
+      run: |
+        echo "Running tests inside container ${CONTAINER_IMAGE}..."
+        podman run --rm \
+          -v "${{ inputs.source_dir }}":/src \
+          "${{ inputs.container_image }}" \
+          /bin/bash -c "
+            set -e
+            ${TEST_COMMANDS}
+          "
+      env:
+        CONTAINER_IMAGE: ${{ inputs.container_image }}
+        TEST_COMMANDS: ${{ inputs.test_commands }}
+
+    - name: List built binaries
+      shell: bash
+      run: |
+        echo "Built files in output directory ($OUTPUT_DIR):"
+        ls -l "$OUTPUT_DIR"
+      env:
+        OUTPUT_DIR: ${{ inputs.output_dir }}
