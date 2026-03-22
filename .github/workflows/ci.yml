@@ -10,50 +10,6 @@ on:
 
 jobs:
 
-  
-  # ── BBB Deploy mit Podman ───────────────────
-  bbb-deploy:
-    name: Build & Deploy (Podman on BBB Server)
-    runs-on: self-hosted
-    needs: [build-cli, build-tui]
-    steps:
-      - uses: actions/checkout@v4
-
-      # Image bauen (ARMv7)
-      - name: Build Image (ARMv7)
-        run: |
-          podman build \
-            --arch arm \
-            --variant v7 \
-            -t bbb-dev:latest \
-            -f docker/bbb/Dockerfile \
-            docker/bbb
-
-      # Alte Instanz stoppen
-      - name: Stop old container
-        run: |
-          podman stop bbb-dev || true
-          podman rm bbb-dev || true
-
-      # Container starten (mit Hardware + Netzwerkrechten)
-      - name: Start container with BBB access
-        run: |
-          podman run -d \
-            --name bbb-dev \
-            --restart=always \
-            --privileged \
-            --cap-add=NET_RAW \
-            --device /dev/ttyUSB0 \
-            --device /dev/gpiochip0 \
-            bbb-dev:latest
-      - name: Show container IP
-        run: |
-          podman inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' bbb-dev
-      # Optional: Connectivity Test
-      - name: Test BBB connectivity
-        run: |
-          podman exec bbb-dev ping -c 3 192.168.7.2 || true
-
   # ── Go HAL Unit Tests (kein Hardware nötig) ──
   test-go:
     name: Go Unit Tests
