@@ -27,25 +27,50 @@ jobs:
           test_commands: |
             echo "=== Run Python Tests ==="
             python3 /src/tests/test_bme260.py
+      # -------------------------
+      # List binaries for debug
+      # -------------------------
+      - name: List generated binaries
+        shell: bash
+        run: ls -l ./bin
 
-      - name: Deploy to BBB
+      # -------------------------
+      # Setup SSH Key for BBB
+      # -------------------------
+      - name: Prepare SSH Key
+        shell: bash
         env:
+          BBB_SSH_KEY: ${{ secrets.BBB_SSH_KEY }}
           BBB_HOST: ${{ secrets.BBB_HOST }}
           BBB_USER: ${{ secrets.BBB_USER }}
-          BBB_SSH_KEY: ${{ secrets.BBB_SSH_KEY }}
         run: |
           mkdir -p ~/.ssh
-          echo "$BBB_SSH_KEY" > ~/.ssh/id_rsa
+          chmod 700 ~/.ssh
+          printf "%s\n" "$BBB_SSH_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          scp -i ~/.ssh/id_rsa bin/* $BBB_USER@$BBB_HOST:/home/$BBB_USER/bin/
+          ssh-keyscan -H $BBB_HOST >> ~/.ssh/known_hosts
 
-      - name: Run Tests on BBB
+      # -------------------------
+      # Deploy binaries to BBB
+      # -------------------------
+      - name: Deploy Binaries to BBB
+        shell: bash
         env:
           BBB_HOST: ${{ secrets.BBB_HOST }}
           BBB_USER: ${{ secrets.BBB_USER }}
-          BBB_SSH_KEY: ${{ secrets.BBB_SSH_KEY }}
         run: |
-          ssh -t -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa $BBB_USER@$BBB_HOST "
+          scp -i ~/.ssh/id_rsa ./bin/* $BBB_USER@$BBB_HOST:/home/$BBB_USER/bin/
+
+      # -------------------------
+      # Run tests on BBB
+      # -------------------------
+      - name: Run Tests on BBB
+        shell: bash
+        env:
+          BBB_HOST: ${{ secrets.BBB_HOST }}
+          BBB_USER: ${{ secrets.BBB_USER }}
+        run: |
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $BBB_USER@$BBB_HOST "
             set -e
             mkdir -p /home/$BBB_USER/bin/logs
             /home/$BBB_USER/bin/bme260_main | tee /home/$BBB_USER/bin/logs/c.log
@@ -53,22 +78,14 @@ jobs:
             /home/$BBB_USER/bin/go_app | tee /home/$BBB_USER/bin/logs/go.log
           "
 
-      - name: Fetch Logs
+      # -------------------------
+      # Fetch logs back to runner
+      # -------------------------
+      - name: Fetch Test Logs
+        shell: bash
         env:
           BBB_HOST: ${{ secrets.BBB_HOST }}
           BBB_USER: ${{ secrets.BBB_USER }}
-          BBB_SSH_KEY: ${{ secrets.BBB_SSH_KEY }}
         run: |
           mkdir -p logs
-          scp -i ~/.ssh/id_rsa -r $BBB_USER@$BBB_HOST:/home/$BBB_USER/bin/logs/* logs/
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            bin/*
-            logs/*
-          name: ${{ github.ref_name }}
-          body: Automatischer Release für BBB CI/CD
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          scp -i ~/.ssh/id_rsa -r $BBB_USER@$BBB_HOST:/home/$BBB_USER/bin/logs/* ./logs/
