@@ -42,7 +42,7 @@ runs:
           -v "$OUTPUT_DIR:/output" \
           -v "$SOURCE_DIR:/src" \
           "$CONTAINER_IMAGE" \
-          -c ${BUILD_COMMANDS}
+          -c "${BUILD_COMMANDS}"
       env:
         OUTPUT_DIR: ${{ inputs.output_dir }}
         SOURCE_DIR: ${{ inputs.source_dir }}
@@ -57,8 +57,8 @@ runs:
         podman run --rm \
           -v "$SOURCE_DIR:/src" \
           "$CONTAINER_IMAGE" \
-          -c ${TEST_COMMANDS}
-          "
+          -c "${TEST_COMMANDS}"
+          
       env:
         CONTAINER_IMAGE: ${{ inputs.container_image }}
         TEST_COMMANDS: ${{ inputs.test_commands }}
