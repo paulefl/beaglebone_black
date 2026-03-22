@@ -29,6 +29,6 @@ runs:
     - name: Run Test Commands inside Container
       if: ${{ inputs.test_commands != '' }}
       shell: bash
-      run: |
+      run: | 
         set -e
         podman run --rm -v ${{ inputs.source_dir }}:/src ${{ inputs.container_image }} /bin/bash -c "${{ inputs.test_commands }}"
