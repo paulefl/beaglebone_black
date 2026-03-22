@@ -27,7 +27,7 @@ jobs:
             --variant v7 \
             -t bbb-dev:latest \
             -f docker/bbb/Dockerfile \
-            .
+            docker/bbb
 
       # Alte Instanz stoppen
       - name: Stop old container
