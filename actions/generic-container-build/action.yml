@@ -22,6 +22,10 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Build container
+      shell: bash
+      run: |
+        podman build -t bbb_bme260-builder:latest -f docker/builder/Dockerfile docker/builder
     - name: Ensure output directory exists
       shell: bash
       run: |
