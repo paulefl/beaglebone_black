@@ -18,6 +18,8 @@ jobs:
           output_dir: ./bin
           container_image: generic-builder
           build_commands: |
+            set -e
+            mkdir -p /output
             echo "=== Build C ==="
             arm-linux-gnueabihf-gcc -o /output/bme260_main /src/c/src/main.c /src/c/src/bme260.c -I /src/c/include -lm &&
             echo "=== Build Rust ==="

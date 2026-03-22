@@ -42,11 +42,8 @@ runs:
           -v "$OUTPUT_DIR:/output" \
           -v "$SOURCE_DIR:/src" \
           "$CONTAINER_IMAGE" \
-          /bin/bash <<'EOF' 
-set -e
-mkdir -p /output
-${BUILD_COMMANDS}
-EOF
+          -c ${BUILD_COMMANDS}
+          EOF
       env:
         OUTPUT_DIR: ${{ inputs.output_dir }}
         SOURCE_DIR: ${{ inputs.source_dir }}
@@ -59,15 +56,16 @@ EOF
       run: |
         echo "Running tests inside container ${CONTAINER_IMAGE}..."
         podman run --rm \
-          -v "${{ inputs.source_dir }}":/src \
-          "${{ inputs.container_image }}" \
-          /bin/bash -c "
-            set -e
-            ${TEST_COMMANDS}
+          -v "$SOURCE_DIR:/src" \
+          "$CONTAINER_IMAGE" \
+          -c ${TEST_COMMANDS}
           "
       env:
         CONTAINER_IMAGE: ${{ inputs.container_image }}
         TEST_COMMANDS: ${{ inputs.test_commands }}
+        OUTPUT_DIR: ${{ inputs.output_dir }}
+        SOURCE_DIR: ${{ inputs.source_dir }}
+
 
     - name: List built binaries
       shell: bash
