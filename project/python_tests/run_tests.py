@@ -1,4 +1,4 @@
-# file: test_bme.py
+# file: run_tests.py
 import subprocess
 import sys
 import os
