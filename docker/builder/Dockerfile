@@ -24,6 +24,7 @@ RUN apt-get update && apt-get install -y \
     golang \
     && rm -rf /var/lib/apt/lists/*
 
+ENV PATH="/usr/local/go/bin:${PATH}"
 # ----------------------------
 # Install Rust + ARM Target
 # ----------------------------
@@ -39,10 +40,20 @@ RUN mkdir -p /root/.cargo && \
     echo 'linker = "arm-linux-gnueabihf-gcc"' >> /root/.cargo/config.toml
 
 # --- Python Test Tools ---
-RUN pip3 install pytest
+# Installiere venv falls noch nicht vorhanden
+RUN apt-get update && apt-get install -y python3-venv python3-pip
+
+# Erstelle venv
+RUN python3 -m venv /opt/venv
+
+# Aktivieren der venv und pytest installieren
+RUN /opt/venv/bin/pip install --upgrade pip && \
+    /opt/venv/bin/pip install pytest
+
+# PATH anpassen
+ENV PATH="/opt/venv/bin:$PATH"
 
 
-ENV PATH="/usr/local/go/bin:${PATH}"
 
 # ----------------------------
 # Set working directory
