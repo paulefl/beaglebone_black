@@ -26,6 +26,7 @@ jobs:
             --arch arm \
             --variant v7 \
             -t bbb-dev:latest \
+            -f docker/bbb/Dockerfile \
             .
 
       # Alte Instanz stoppen
@@ -45,7 +46,9 @@ jobs:
             --device /dev/ttyUSB0 \
             --device /dev/gpiochip0 \
             bbb-dev:latest
-
+      - name: Show container IP
+        run: |
+          podman inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' bbb-dev
       # Optional: Connectivity Test
       - name: Test BBB connectivity
         run: |
