@@ -15,6 +15,7 @@ jobs:
       - uses: ./actions/generic-container-build
         with:
           source_dir: ./project
+          test_dir : ./project/python_tests
           output_dir: ./bin
           container_image: generic-builder
           build_commands: |
@@ -40,7 +41,7 @@ jobs:
 
           test_commands: |
             echo "=== Run Python Tests (host binaries only) ==="
-            pytest /src/python_tests || true
+            /opt/venv/bin/python /tests/run_tests.py
 
       - name: Prepare SSH Key for BBB
         shell: bash
